@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Verilens — Deepfake & Misinformation Detector",
+  "version": "0.1.0",
+  "description": "Detect AI-generated media and misinformation on social feeds. (M1: manual image deepfake check, mock backend.)",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://x.com/*",
+    "https://twitter.com/*"
+  ],
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://x.com/*", "https://twitter.com/*"],
+      "js": [
+        "lib/hash.js",
+        "lib/tiers.js",
+        "content/adapters/twitter.js",
+        "content/badge.js",
+        "content/actions.js",
+        "content/content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["content/styles.css"],
+      "matches": ["https://x.com/*", "https://twitter.com/*"]
+    }
+  ],
+  "action": {
+    "default_title": "Verilens"
+  }
+}

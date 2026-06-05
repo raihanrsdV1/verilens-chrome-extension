@@ -1,0 +1,244 @@
+/* content/styles.css
+   Loaded INTO each post's Shadow DOM, so these rules only ever touch our own
+   UI — site CSS can't reach in and we can't leak out. Dark-mode friendly.
+   Bands: green #2ecc71, amber #f39c12, red #e74c3c. */
+
+:host,
+.verilens-root {
+  all: initial;
+}
+
+.verilens-root {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #e7e9ea;
+  display: block;
+  margin: 4px 0 10px;
+}
+
+/* ---- Control bar ---- */
+.verilens-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.verilens-brand {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: #8b98a5;
+}
+
+.verilens-btn {
+  appearance: none;
+  border: 1px solid #2f3336;
+  background: #16181c;
+  color: #e7e9ea;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+.verilens-btn:hover {
+  background: #1f2226;
+  border-color: #3a3f44;
+}
+.verilens-btn:disabled,
+.verilens-btn.loading {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ---- Result panel ---- */
+.verilens-panel {
+  margin-top: 8px;
+  border: 1px solid #2f3336;
+  border-radius: 12px;
+  background: #16181c;
+  padding: 12px 14px;
+  max-width: 520px;
+}
+
+.verilens-section + .verilens-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #2f3336;
+}
+
+.verilens-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.verilens-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #8b98a5;
+}
+.verilens-chip {
+  font-size: 10px;
+  font-weight: 600;
+  color: #8b98a5;
+  border: 1px solid #2f3336;
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+
+/* Band row */
+.verilens-verdict-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.verilens-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+.verilens-verdict-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+.verilens-prob {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8b98a5;
+}
+
+.verilens-verdict-row.green .verilens-dot { background: #2ecc71; }
+.verilens-verdict-row.green .verilens-verdict-label { color: #2ecc71; }
+.verilens-verdict-row.amber .verilens-dot { background: #f39c12; }
+.verilens-verdict-row.amber .verilens-verdict-label { color: #f39c12; }
+.verilens-verdict-row.red .verilens-dot { background: #e74c3c; }
+.verilens-verdict-row.red .verilens-verdict-label { color: #e74c3c; }
+
+.verilens-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #b8a04a;
+  background: rgba(243, 156, 18, 0.08);
+  border: 1px solid rgba(243, 156, 18, 0.25);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.verilens-explain {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: #c4c9ce;
+}
+
+.verilens-error {
+  font-size: 12.5px;
+  color: #e74c3c;
+}
+
+/* Grey band (used by fact-check "unverifiable") */
+.verilens-verdict-row.grey .verilens-dot { background: #8b98a5; }
+.verilens-verdict-row.grey .verilens-verdict-label { color: #aab4bd; }
+
+.verilens-btn.locked {
+  border-style: dashed;
+  color: #c9b27a;
+}
+
+/* ---- Fact-check claims ---- */
+.verilens-claim {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #2f3336;
+  border-radius: 10px;
+  background: #1a1d21;
+}
+.verilens-claim-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.verilens-claim-text {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: #e7e9ea;
+}
+
+/* Verdict pills */
+.verilens-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.verilens-pill.green { background: rgba(46, 204, 113, 0.15); color: #2ecc71; }
+.verilens-pill.amber { background: rgba(243, 156, 18, 0.15); color: #f39c12; }
+.verilens-pill.red   { background: rgba(231, 76, 60, 0.15);  color: #e74c3c; }
+.verilens-pill.grey  { background: rgba(139, 152, 165, 0.15); color: #aab4bd; }
+
+/* Sources */
+.verilens-sources {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.verilens-source {
+  font-size: 12px;
+  color: #8b98a5;
+}
+.verilens-source-link {
+  color: #1d9bf0;
+  font-weight: 600;
+  text-decoration: none;
+}
+.verilens-source-link:hover { text-decoration: underline; }
+.verilens-source-summary { color: #8b98a5; }
+
+/* ---- Upgrade / premium gate card ---- */
+.verilens-upgrade {
+  border: 1px solid rgba(29, 155, 240, 0.35);
+  background: rgba(29, 155, 240, 0.06);
+  border-radius: 10px;
+  padding: 12px;
+}
+.verilens-upgrade-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e7e9ea;
+  margin-bottom: 4px;
+}
+.verilens-cta {
+  appearance: none;
+  border: none;
+  background: #1d9bf0;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+.verilens-cta:hover { background: #1a8cd8; }
+.verilens-dev-link {
+  display: block;
+  margin-top: 8px;
+  appearance: none;
+  border: none;
+  background: none;
+  color: #8b98a5;
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+.verilens-dev-link:hover { color: #aab4bd; }
