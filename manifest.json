@@ -7,18 +7,31 @@
   "host_permissions": [
     "https://x.com/*",
     "https://twitter.com/*",
-    "https://pbs.twimg.com/*"
+    "https://pbs.twimg.com/*",
+    "https://www.instagram.com/*",
+    "https://instagram.com/*",
+    "https://*.cdninstagram.com/*",
+    "https://www.facebook.com/*",
+    "https://facebook.com/*",
+    "https://*.fbcdn.net/*"
   ],
   "background": {
     "service_worker": "service-worker.js"
   },
   "content_scripts": [
     {
-      "matches": ["https://x.com/*", "https://twitter.com/*"],
+      "matches": [
+        "https://x.com/*",
+        "https://twitter.com/*",
+        "https://www.instagram.com/*",
+        "https://www.facebook.com/*"
+      ],
       "js": [
         "lib/hash.js",
         "lib/tiers.js",
         "content/adapters/twitter.js",
+        "content/adapters/instagram.js",
+        "content/adapters/facebook.js",
         "content/badge.js",
         "content/actions.js",
         "content/filter.js",
@@ -31,7 +44,12 @@
   "web_accessible_resources": [
     {
       "resources": ["content/styles.css"],
-      "matches": ["https://x.com/*", "https://twitter.com/*"]
+      "matches": [
+        "https://x.com/*",
+        "https://twitter.com/*",
+        "https://www.instagram.com/*",
+        "https://www.facebook.com/*"
+      ]
     }
   ],
   "action": {

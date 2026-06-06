@@ -99,18 +99,91 @@ body {
 .vl-switch input:checked + .vl-slider::before { transform: translateX(18px); }
 .vl-switch input:disabled + .vl-slider { opacity: 0.5; }
 
-/* Dev card */
-.vl-dev { border-style: dashed; }
-.vl-dev-tag {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: #8b98a5;
-  border: 1px solid #2f3336;
-  border-radius: 5px;
-  padding: 0 4px;
-  vertical-align: middle;
+/* Session stats */
+.vl-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 10px;
 }
+.vl-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.vl-stat-num { font-size: 18px; font-weight: 800; color: #e7e9ea; }
+.vl-stat-label { font-size: 9.5px; color: #8b98a5; text-align: center; }
+
+/* Upgrade card */
+.vl-upgrade { border-color: rgba(29, 155, 240, 0.4); background: rgba(29, 155, 240, 0.06); }
+.vl-upgrade-head { font-size: 14px; font-weight: 800; margin-bottom: 8px; }
+.vl-benefits {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.vl-benefits li {
+  font-size: 12.5px;
+  color: #c4c9ce;
+  padding-left: 18px;
+  position: relative;
+}
+.vl-benefits li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #1d9bf0;
+  font-weight: 800;
+}
+.vl-cta {
+  width: 100%;
+  appearance: none;
+  border: none;
+  background: #1d9bf0;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 9px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.vl-cta:hover { background: #1a8cd8; }
+
+.vl-premium-active { border-color: rgba(46, 204, 113, 0.4); background: rgba(46, 204, 113, 0.06); }
+.vl-premium-head { font-size: 14px; font-weight: 800; color: #2ecc71; margin-bottom: 2px; }
+
+/* Dev card (collapsible) */
+.vl-dev { border-style: dashed; }
+.vl-dev-summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: #8b98a5;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  list-style: none;
+}
+.vl-dev-summary::-webkit-details-marker { display: none; }
+.vl-dev-summary::before { content: "▸ "; }
+details[open] .vl-dev-summary::before { content: "▾ "; }
+.vl-dev > .vl-row { margin-top: 12px; }
+.vl-dev-link {
+  display: block;
+  margin-top: 10px;
+  appearance: none;
+  border: none;
+  background: none;
+  color: #8b98a5;
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+.vl-dev-link:hover { color: #aab4bd; }
 
 .vl-footer {
   text-align: center;

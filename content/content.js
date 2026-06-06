@@ -11,8 +11,18 @@
 //     a separate thing arriving in M3, not here.
 (function () {
   const Adapters = window.VerilensAdapters || {};
-  // x.com and twitter.com share the same DOM → same adapter.
-  const adapter = Adapters.twitter;
+
+  // Pick the adapter for the current site. x.com and twitter.com share the
+  // Twitter DOM, so they map to the same adapter.
+  function pickAdapter() {
+    const h = location.hostname;
+    if (h.endsWith("x.com") || h.endsWith("twitter.com")) return Adapters.twitter;
+    if (h.endsWith("instagram.com")) return Adapters.instagram;
+    if (h.endsWith("facebook.com")) return Adapters.facebook;
+    return null;
+  }
+
+  const adapter = pickAdapter();
   if (!adapter) return;
 
   function processPost(postEl) {
@@ -64,11 +74,14 @@
   // X fires a LOT of DOM mutations while scrolling; most have nothing to do with
   // new posts. Only bother scanning when a mutation actually adds article-like
   // nodes — this keeps the observer cheap and the feed smooth.
+  // Twitter/IG use <article>; Facebook uses <div role="article">. Match both,
+  // or FB never re-scans as posts stream in.
+  const POST_SEL = 'article, [role="article"]';
   function addsArticles(mutations) {
     for (const m of mutations) {
       for (const n of m.addedNodes) {
         if (n.nodeType !== 1) continue; // elements only
-        if ((n.matches && n.matches("article")) || (n.querySelector && n.querySelector("article"))) {
+        if ((n.matches && n.matches(POST_SEL)) || (n.querySelector && n.querySelector(POST_SEL))) {
           return true;
         }
       }

@@ -42,11 +42,40 @@
       </div>
     </section>
 
-    <!-- Dev tools -->
-    <section class="vl-card vl-dev">
+    <!-- Session stats -->
+    <section class="vl-card">
+      <div class="vl-cat-head">This session</div>
+      <div class="vl-stats">
+        <div class="vl-stat"><span id="statScans" class="vl-stat-num">0</span><span class="vl-stat-label">Media checks</span></div>
+        <div class="vl-stat"><span id="statFacts" class="vl-stat-num">0</span><span class="vl-stat-label">Fact-checks</span></div>
+        <div class="vl-stat"><span id="statConfirmed" class="vl-stat-num">0</span><span class="vl-stat-label">Confirmed AI</span></div>
+        <div class="vl-stat"><span id="statFiltered" class="vl-stat-num">0</span><span class="vl-stat-label">Filtered</span></div>
+      </div>
+    </section>
+
+    <!-- Upgrade screen (free) / status (premium) -->
+    <section class="vl-card vl-upgrade" id="upgradeCard">
+      <div class="vl-upgrade-head">Unlock Premium</div>
+      <ul class="vl-benefits">
+        <li>Video &amp; audio deepfake detection</li>
+        <li>Agentic fact-checking with sources</li>
+        <li>Automatic content filtering</li>
+      </ul>
+      <button id="upgradeBtn" class="vl-cta">Upgrade to Premium</button>
+    </section>
+
+    <section class="vl-card vl-premium-active" id="premiumCard" hidden>
+      <div class="vl-premium-head">✓ Premium active</div>
+      <div class="vl-row-desc">All detection and filtering features are unlocked.</div>
+    </section>
+
+    <!-- Developer tools (collapsed) -->
+    <details class="vl-card vl-dev">
+      <summary class="vl-dev-summary">Developer</summary>
+
       <div class="vl-row">
         <div>
-          <div class="vl-row-title">Plan <span class="vl-dev-tag">dev</span></div>
+          <div class="vl-row-title">Plan</div>
           <div class="vl-row-desc">Switch your tier to test gated features.</div>
         </div>
         <label class="vl-switch">
@@ -55,9 +84,11 @@
         </label>
       </div>
       <div class="vl-row-desc" id="tierLabel">Free</div>
-    </section>
 
-    <footer class="vl-footer">M3 · mock backend</footer>
+      <button id="resetStats" class="vl-dev-link">Reset session stats</button>
+    </details>
+
+    <footer class="vl-footer">M4 · mock backend</footer>
 
     <script src="popup.js"></script>
   </body>

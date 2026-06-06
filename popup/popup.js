@@ -22,6 +22,14 @@ const els = {
   catInputs: Array.from(document.querySelectorAll("[data-cat]")),
   tierToggle: document.getElementById("tierToggle"),
   tierLabel: document.getElementById("tierLabel"),
+  upgradeCard: document.getElementById("upgradeCard"),
+  premiumCard: document.getElementById("premiumCard"),
+  upgradeBtn: document.getElementById("upgradeBtn"),
+  resetStats: document.getElementById("resetStats"),
+  statScans: document.getElementById("statScans"),
+  statFacts: document.getElementById("statFacts"),
+  statConfirmed: document.getElementById("statConfirmed"),
+  statFiltered: document.getElementById("statFiltered"),
 };
 
 async function getState() {
@@ -29,11 +37,13 @@ async function getState() {
     "verilens_tier",
     "verilens_autofilter_enabled",
     "verilens_filter_categories",
+    "verilens_stats",
   ]);
   return {
     tier: o.verilens_tier || "free",
     enabled: !!o.verilens_autofilter_enabled,
     categories: o.verilens_filter_categories || { ...DEFAULT_CATEGORIES },
+    stats: o.verilens_stats || {},
   };
 }
 
@@ -58,6 +68,17 @@ function render(state) {
     input.checked = state.categories[cat] !== false;
     input.disabled = !catsActive;
   });
+
+  // Session stats
+  const s = state.stats || {};
+  els.statScans.textContent = s.deepfakeScans || 0;
+  els.statFacts.textContent = s.factCheckScans || 0;
+  els.statConfirmed.textContent = s.confirmedAI || 0;
+  els.statFiltered.textContent = s.filteredPosts || 0;
+
+  // Upgrade screen vs. premium-active status
+  els.upgradeCard.hidden = isPremium;
+  els.premiumCard.hidden = !isPremium;
 }
 
 // Timing probe: how long from this script starting to the first full render.
@@ -96,6 +117,17 @@ els.catInputs.forEach((input) => {
   });
 });
 
+els.upgradeBtn.addEventListener("click", () => {
+  // Real checkout/account flow is out of scope for the mock. The dev Plan switch
+  // (below) is how you actually flip to premium for testing.
+  alert("Verilens Premium — checkout flow coming soon.\n\n(For testing, use Developer → Plan.)");
+});
+
+els.resetStats.addEventListener("click", async () => {
+  await chrome.storage.local.set({ verilens_stats: {} });
+  refresh();
+});
+
 // Keep the popup in sync if OUR settings change elsewhere (e.g. the in-page dev
 // "Enable premium" link). Ignore the cache key — it changes constantly during
 // classify and would cause needless re-renders.
@@ -104,7 +136,8 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (
     changes.verilens_tier ||
     changes.verilens_autofilter_enabled ||
-    changes.verilens_filter_categories
+    changes.verilens_filter_categories ||
+    changes.verilens_stats
   ) {
     refresh();
   }

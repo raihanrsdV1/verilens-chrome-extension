@@ -110,6 +110,17 @@
 
     postEl.appendChild(host);
     filtered.add(postEl);
+    bumpFilteredStat();
+  }
+
+  // Session stat: count posts actually hidden by the filter.
+  function bumpFilteredStat() {
+    if (!alive()) return;
+    chrome.storage.local.get("verilens_stats").then((o) => {
+      const s = o.verilens_stats || {};
+      s.filteredPosts = (s.filteredPosts || 0) + 1;
+      chrome.storage.local.set({ verilens_stats: s });
+    });
   }
 
   function revealPost(postEl) {
@@ -135,12 +146,14 @@
       .forEach((e) => delete e.dataset.verilensFilter);
   }
 
-  // ---- discovery: hand new articles to the IntersectionObserver ------------
+  // ---- discovery: hand new posts to the IntersectionObserver ---------------
+  // Twitter/IG use <article>; Facebook uses <div role="article">.
+  const POST_SEL = 'article, [role="article"]';
   function addsArticles(mutations) {
     for (const m of mutations) {
       for (const n of m.addedNodes) {
         if (n.nodeType !== 1) continue;
-        if ((n.matches && n.matches("article")) || (n.querySelector && n.querySelector("article"))) {
+        if ((n.matches && n.matches(POST_SEL)) || (n.querySelector && n.querySelector(POST_SEL))) {
           return true;
         }
       }

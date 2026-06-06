@@ -330,11 +330,43 @@ Click the **↻ reload** icon on the Verilens card, then **hard-refresh** the x.
 |-----------|-------|--------|
 | **M1** | manifest + service worker + Twitter/X adapter + "Check media" deepfake button (image) + result panel + local cache mirror | ✅ Done |
 | **M2** | Fact-check button + result panel + tier gating + upgrade prompts | ✅ Done |
-| **M3** | Auto-filter (premium): `MutationObserver` + cheap classify path + **blur-in-place + label + "Show anyway"** + popup category toggles. Classify results cached in the local mirror (`classify` kind). | ⏭ Next |
-| **M4** | Popup polish: master toggle, tier dev-switch, session stats, upgrade/account screen | Planned |
-| **M5** | Instagram adapter | Planned |
+| **M3** | Auto-filter (premium): viewport-driven `IntersectionObserver` + cheap classify path (+ local C2PA signal) + **blur-in-place + label + "Show anyway"** + popup category toggles. Classify results cached in the local mirror (`classify` kind). | ✅ Done |
+| **M4** | Popup polish: master toggle, session stats, upgrade screen, collapsed Developer tools (tier dev-switch) | ✅ Done |
+| **M5** | Instagram adapter + Facebook adapter; multi-platform dispatch by hostname | ✅ Done |
 
-Filter categories (M3): `political`, `ai_meme`, `ai_generated`, `misinformation`.
+Filter categories: `political`, `ai_meme`, `ai_generated`, `misinformation`.
+
+**Supported platforms:** X/Twitter (mature), Instagram & Facebook (best-effort selectors — their DOM is heavily obfuscated and may need retuning in the adapter files).
+
+---
+
+## Known issues & remaining work
+
+Captured for follow-up. X/Twitter is solid; the newer adapters and some surfaces need more work.
+
+### Facebook adapter — not reliably working
+- The Verilens control bar often does **not** appear on Facebook posts. FB's DOM is fully obfuscated and varies by account/rollout (classic vs. newer layouts), so the current selectors in [`content/adapters/facebook.js`](content/adapters/facebook.js) need tuning against live markup.
+- Likely culprits to investigate: `findPosts()` (`[role="article"]` may not match every post container or may match too much), `getActionAnchor()` (the like/comment toolbar isn't a reliable `[role="group"]`), and caption/image extraction.
+- **TODO:** instrument with the console diagnostic (post count vs. `.verilens-host` count), then retune `findPosts` / anchor / caption / image selectors. Consider scoping to the main feed container.
+
+### Instagram & Facebook Reels / video-first surfaces — need a new button UI
+- **Reels** (IG) and **Reels/Watch** (FB) use a full-screen, vertical, overlay-heavy layout that's very different from feed posts. The current approach — injecting an inline control bar near a post's action row — **doesn't fit** there (no stable inline anchor; our bar gets hidden or mispositioned).
+- This isn't just a selector fix; it needs a **different control representation** for video-first surfaces. Options to design:
+  - A small **floating action button** (FAB) pinned to the viewport that targets the currently-visible reel.
+  - Attaching to the reel's **right-hand action rail** (like/comment/share stack) as an extra item.
+  - A single toolbar/badge anchored to the reel container rather than an inline bar.
+- **TODO:** design + implement a reel/video control mode, separate from the feed-post inline bar, and have the adapter report whether a surface is "feed" vs "reel" so `actions.js` can pick the right UI.
+
+### C2PA provenance
+- Stage A C2PA parsing is **real** (reads image bytes, detects manifest + AI marker) but does **not verify the cryptographic signature** — that needs the official in-browser `c2pa` **WASM SDK** (vendored wasm/worker assets). Marked `TODO(verify)` in [`lib/provenanceLocal.js`](lib/provenanceLocal.js).
+- Reality check: X/Twitter (and most platforms) **strip C2PA on upload**, so real-mode C2PA reads "absent" on nearly all real posts. Flip `MODE = "mock"` in `provenanceLocal.js` to demo the Confirmed-AI-via-C2PA UI.
+
+### Backend
+- All three capabilities still run against the **mock backend** (`lib/mockBackend.js`). Swapping in the real hosted pipeline = replace the `Mock.*` calls in `service-worker.js` with `fetch()` to the documented contract endpoints. SynthID is a backend signal the extension only consumes.
+
+### Smaller items
+- IG/FB image extraction excludes avatars heuristically; may occasionally miss or over-match content images.
+- Real-mode C2PA on the auto-filter path fetches image bytes per visible post — watch for scroll cost on slow connections; consider restricting real C2PA to the manual click path if needed.
 
 ---
 

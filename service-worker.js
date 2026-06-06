@@ -46,6 +46,15 @@ function delay(ms) {
   return new Promise((res) => setTimeout(res, ms));
 }
 
+// Session stats shown in the popup. Small object, incremented on real work only
+// (never on cache hits, to avoid inflating counts on re-scans).
+async function bumpStat(key, n = 1) {
+  const o = await chrome.storage.local.get("verilens_stats");
+  const s = o.verilens_stats || {};
+  s[key] = (s[key] || 0) + n;
+  await chrome.storage.local.set({ verilens_stats: s });
+}
+
 // ---- Deepfake scan ---------------------------------------------------------
 async function handleDeepfake(payload) {
   log("deepfake ← received payload:", payload);
@@ -80,6 +89,8 @@ async function handleDeepfake(payload) {
     const confirmedResult = buildC2PAConfirmed(payload, prov);
     confirmedResult.cached = false;
     await Cache.setVerdict(payload.postId, confirmedResult, "deepfake");
+    await bumpStat("deepfakeScans");
+    await bumpStat("confirmedAI");
     return confirmedResult;
   }
 
@@ -92,6 +103,8 @@ async function handleDeepfake(payload) {
   result.cached = false;
 
   await Cache.setVerdict(payload.postId, result, "deepfake");
+  await bumpStat("deepfakeScans");
+  if (result.confirmed) await bumpStat("confirmedAI");
   log("deepfake → returning result:", result);
   return result;
 }
@@ -149,6 +162,7 @@ async function handleFactcheck(payload) {
   result.cached = false;
 
   await Cache.setVerdict(payload.postId, result, "factcheck");
+  await bumpStat("factCheckScans");
   log("factcheck → returning result:", result);
   return result;
 }
