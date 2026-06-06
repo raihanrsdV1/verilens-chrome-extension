@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="popup.css" />
+    <title>Verilens</title>
+  </head>
+  <body>
+    <header class="vl-header">
+      <span class="vl-logo">🛡</span>
+      <div>
+        <div class="vl-title">Verilens</div>
+        <div class="vl-subtitle">Deepfake &amp; misinformation</div>
+      </div>
+      <span id="tierBadge" class="vl-tier">free</span>
+    </header>
+
+    <!-- Auto content filter (premium) -->
+    <section class="vl-card">
+      <div class="vl-row">
+        <div>
+          <div class="vl-row-title">Auto content filter</div>
+          <div class="vl-row-desc">Automatically hide flagged posts as you scroll.</div>
+        </div>
+        <label class="vl-switch">
+          <input type="checkbox" id="autofilterToggle" />
+          <span class="vl-slider"></span>
+        </label>
+      </div>
+
+      <p id="premiumNote" class="vl-note" hidden>
+        🔒 Auto filtering is a <strong>Premium</strong> feature. Manual checks still work on the free plan.
+      </p>
+
+      <div id="categories" class="vl-categories">
+        <div class="vl-cat-head">Hide these categories</div>
+        <label class="vl-check"><input type="checkbox" data-cat="political" /> Political</label>
+        <label class="vl-check"><input type="checkbox" data-cat="ai_meme" /> AI meme</label>
+        <label class="vl-check"><input type="checkbox" data-cat="ai_generated" /> AI-generated</label>
+        <label class="vl-check"><input type="checkbox" data-cat="misinformation" /> Misinformation</label>
+      </div>
+    </section>
+
+    <!-- Dev tools -->
+    <section class="vl-card vl-dev">
+      <div class="vl-row">
+        <div>
+          <div class="vl-row-title">Plan <span class="vl-dev-tag">dev</span></div>
+          <div class="vl-row-desc">Switch your tier to test gated features.</div>
+        </div>
+        <label class="vl-switch">
+          <input type="checkbox" id="tierToggle" />
+          <span class="vl-slider"></span>
+        </label>
+      </div>
+      <div class="vl-row-desc" id="tierLabel">Free</div>
+    </section>
+
+    <footer class="vl-footer">M3 · mock backend</footer>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

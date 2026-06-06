@@ -24,9 +24,24 @@
     return { postUrl, postId: m ? m[1] : "" };
   }
 
+  // A quote tweet nests the QUOTED (earlier) post inside the same <article> as
+  // a `div[role="link"]` card — with its OWN tweetText and tweetPhoto. A plain
+  // querySelector would only return the outer author's commentary and drop the
+  // quoted post's caption, even though its IMAGE is what we're analyzing. So we
+  // collect every tweetText in the article and label the quoted one, giving the
+  // backend the full textual context (and a contentHash that reflects both).
   function extractCaption(postEl) {
-    const node = postEl.querySelector('[data-testid="tweetText"]');
-    return node ? node.innerText.trim() : "";
+    const nodes = Array.from(postEl.querySelectorAll('[data-testid="tweetText"]'));
+    if (!nodes.length) return "";
+
+    const parts = nodes.map((node) => {
+      const text = node.innerText.trim();
+      if (!text) return "";
+      const isQuoted = !!node.closest('div[role="link"]');
+      return isQuoted ? "[Quoted post] " + text : text;
+    });
+
+    return parts.filter(Boolean).join("\n\n");
   }
 
   // Real attached photos live under [data-testid="tweetPhoto"] and are served

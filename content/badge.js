@@ -65,18 +65,22 @@
 
     sectionHead(section, "Deepfake check", result.cached);
 
-    const img = result.media && result.media.image;
+    const media = result.media || {};
     const band = result.band || "amber";
+
+    // Use whichever modality was actually analyzed for the headline %: image if
+    // present, otherwise the video result (for video-only posts on premium).
+    let primary = null;
+    if (media.image && media.image.available !== false) primary = media.image;
+    else if (media.video && media.video.available) primary = media.video;
 
     const verdictRow = el("div", "verilens-verdict-row " + band);
     verdictRow.append(el("span", "verilens-dot"));
     verdictRow.append(el("span", "verilens-verdict-label", BAND_LABEL[band] || "Uncertain"));
-    if (img && typeof img.aiGenerated === "number") {
-      verdictRow.append(el("span", "verilens-prob", Math.round(img.aiGenerated * 100) + "% AI"));
+    if (primary && typeof primary.aiGenerated === "number") {
+      verdictRow.append(el("span", "verilens-prob", Math.round(primary.aiGenerated * 100) + "% AI"));
     }
     section.append(verdictRow);
-
-    const media = result.media || {};
     const hints = [];
     if (media.video && media.video.available === false && media.video.reason === "premium_required") {
       hints.push("Video analysis is a premium feature.");
@@ -175,10 +179,13 @@
   }
 
   // ---- Upgrade prompt (premium gate) ---------------------------------------
+  // info: { kind: "deepfake"|"factcheck", message } — renders the upgrade card
+  // into the matching section so it sits where the user clicked.
   // handlers: { onUpgrade, onDevEnable } — wired by actions.js.
   function renderUpgrade(mount, info, handlers) {
-    const section = ensureSection(mount, "factcheck");
-    sectionHead(section, "Fact-check", false);
+    const kind = info.kind === "deepfake" ? "deepfake" : "factcheck";
+    const section = ensureSection(mount, kind);
+    sectionHead(section, kind === "deepfake" ? "Deepfake check" : "Fact-check", false);
 
     const card = el("div", "verilens-upgrade");
     card.append(el("div", "verilens-upgrade-title", "🔒 Premium feature"));

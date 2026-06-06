@@ -7,6 +7,23 @@
 (function (g) {
   const Tiers = g.VerilensTiers;
 
+  // Flip to false to silence dev logs. When true, every request we build and
+  // every response we get is printed to THIS page's DevTools console, tagged
+  // [Verilens], so you can verify the extracted payload is real — not just that
+  // the UI rendered something.
+  const DEBUG = true;
+  function log(...args) {
+    if (DEBUG) console.log("%c[Verilens]", "color:#1d9bf0;font-weight:bold", ...args);
+  }
+
+  // After the extension is reloaded/updated, content scripts already on the page
+  // are orphaned: chrome.runtime is dead and any getURL/sendMessage throws
+  // "Extension context invalidated". Guard with this and fail quietly; a tab
+  // refresh re-injects a fresh script.
+  function alive() {
+    return !!(g.chrome && chrome.runtime && chrome.runtime.id);
+  }
+
   function el(tag, className, text) {
     const n = document.createElement(tag);
     if (className) n.className = className;
@@ -15,12 +32,17 @@
   }
 
   function getTier() {
-    return chrome.runtime.sendMessage({ type: "GET_TIER" }).then((r) => (r && r.tier) || "free");
+    if (!alive()) return Promise.resolve("free");
+    return chrome.runtime
+      .sendMessage({ type: "GET_TIER" })
+      .then((r) => (r && r.tier) || "free")
+      .catch(() => "free");
   }
 
   // Create (once) the shadow host for a post and return its inner mount div.
   function ensureMount(postEl, anchor) {
     if (postEl.__verilensMount) return postEl.__verilensMount;
+    if (!alive()) return null; // orphaned script — getURL would throw
 
     const host = el("div", "verilens-host");
     // Reset inherited layout so the host doesn't pick up X's flex/markup quirks.
@@ -65,7 +87,29 @@
     }
   }
 
-  async function runDeepfake(data, mount, btn) {
+  // Shared upgrade-card handlers: a placeholder checkout, plus a dev shortcut
+  // that flips the tier to premium, refreshes the button locks, and re-runs.
+  function makeUpgradeHandlers(refreshControls, rerun) {
+    return {
+      onUpgrade: () => {
+        // Real upgrade/account flow lands in M4. For now, a quiet inline note.
+        alert("Verilens Premium — checkout flow coming soon.");
+      },
+      onDevEnable: async () => {
+        if (!alive()) return;
+        try {
+          await chrome.runtime.sendMessage({ type: "SET_TIER", tier: "premium" });
+          if (refreshControls) await refreshControls();
+          if (rerun) rerun();
+        } catch (e) {
+          /* dead context — ignore */
+        }
+      },
+    };
+  }
+
+  async function runDeepfake(data, mount, btn, refreshControls) {
+    log("→ SCAN_DEEPFAKE request payload:", data);
     let res;
     await withLoading(btn, "Checking…", async () => {
       try {
@@ -74,10 +118,23 @@
         res = { error: String(e) };
       }
     });
+    log("← deepfake result:", res);
+
+    // Video/audio-only deepfake is premium → the worker may gate it.
+    if (res && res.gated) {
+      g.VerilensBadge.renderUpgrade(
+        mount,
+        { kind: "deepfake", message: res.message },
+        makeUpgradeHandlers(refreshControls, () => runDeepfake(data, mount, btn, refreshControls))
+      );
+      return;
+    }
+
     g.VerilensBadge.renderDeepfake(mount, res);
   }
 
   async function runFactcheck(data, mount, btn, refreshControls) {
+    log("→ SCAN_FACTCHECK request payload:", data);
     let res;
     await withLoading(btn, "Checking…", async () => {
       try {
@@ -86,58 +143,83 @@
         res = { error: String(e) };
       }
     });
+    log("← factcheck result:", res);
 
     if (res && res.gated) {
-      g.VerilensBadge.renderUpgrade(mount, res, {
-        onUpgrade: () => {
-          // Real upgrade/account flow lands in M4. For now, a quiet inline note.
-          alert("Verilens Premium — checkout flow coming soon.");
-        },
-        onDevEnable: async () => {
-          await chrome.runtime.sendMessage({ type: "SET_TIER", tier: "premium" });
-          if (refreshControls) await refreshControls(); // drop the lock on the button
-          runFactcheck(data, mount, btn, refreshControls); // re-run now that we're premium
-        },
-      });
+      g.VerilensBadge.renderUpgrade(
+        mount,
+        { kind: "factcheck", message: res.message },
+        makeUpgradeHandlers(refreshControls, () => runFactcheck(data, mount, btn, refreshControls))
+      );
       return;
     }
 
     g.VerilensBadge.renderFactcheck(mount, res);
   }
 
-  // Public: attach the control bar for a post.
+  // Public: attach the control bar for a post. Which buttons appear — and which
+  // are locked — depends on what the post actually contains:
+  //   - deepfake button: shown if there's media (image OR video).
+  //       image  → free (deepfakeImage)
+  //       video  → premium (deepfakeVideo), shown locked for free users
+  //   - fact-check button: shown if there's text to verify; always premium.
   async function attach(postEl, data, anchor) {
+    if (!alive()) return;
+
+    const hasImage = data.imageUrls.length > 0;
+    const hasVideo = !!data.hasVideo;
+    const hasText = (data.captionText || "").trim().length > 0;
+    const showDeepfake = hasImage || hasVideo;
+    const showFactcheck = hasText;
+    if (!showDeepfake && !showFactcheck) return;
+
     const mount = ensureMount(postEl, anchor);
+    if (!mount) return; // dead context
     if (mount.querySelector(".verilens-bar")) return; // already attached
 
     const bar = el("div", "verilens-bar");
     bar.append(el("span", "verilens-brand", "🛡 Verilens"));
 
-    // Deepfake (image) is free — no gate.
-    const checkBtn = el("button", "verilens-btn", "Check media");
-    checkBtn.title = "Run AI deepfake detection on this image";
-    checkBtn.addEventListener("click", () => runDeepfake(data, mount, checkBtn));
-    bar.append(checkBtn);
+    let checkBtn = null;
+    let factBtn = null;
 
-    // Fact-check is premium. We show a lock when the user can't use it, but the
-    // worker remains the source of truth on the gate.
-    const factBtn = el("button", "verilens-btn", "Fact-check");
-    factBtn.title = "Verify the claims in this post against trusted sources";
+    // The deepfake gate depends on the media type: image is free, video is not.
+    const deepfakeFeature = hasImage ? "deepfakeImage" : "deepfakeVideo";
 
-    async function refreshControls() {
-      const tier = await getTier();
-      const locked = !Tiers.isAllowed("factCheck", tier);
-      factBtn.textContent = locked ? "🔒 Fact-check" : "Fact-check";
-      factBtn.classList.toggle("locked", locked);
+    if (showDeepfake) {
+      checkBtn = el("button", "verilens-btn", "Check media");
+      checkBtn.title = hasImage
+        ? "Run AI deepfake detection on this image"
+        : "Run AI deepfake detection on this video (Premium)";
+      checkBtn.addEventListener("click", () => runDeepfake(data, mount, checkBtn, refreshControls));
+      bar.append(checkBtn);
     }
 
-    factBtn.addEventListener("click", () => runFactcheck(data, mount, factBtn, refreshControls));
-    bar.append(factBtn);
+    if (showFactcheck) {
+      factBtn = el("button", "verilens-btn", "Fact-check");
+      factBtn.title = "Verify the claims in this post against trusted sources";
+      factBtn.addEventListener("click", () => runFactcheck(data, mount, factBtn, refreshControls));
+      bar.append(factBtn);
+    }
+
+    // Reflect lock state for the current tier on whichever buttons exist. The
+    // worker remains the authoritative gate; locks are a visual hint.
+    async function refreshControls() {
+      const tier = await getTier();
+      if (checkBtn) {
+        const locked = !Tiers.isAllowed(deepfakeFeature, tier);
+        checkBtn.textContent = locked ? "🔒 Check media" : "Check media";
+        checkBtn.classList.toggle("locked", locked);
+      }
+      if (factBtn) {
+        const locked = !Tiers.isAllowed("factCheck", tier);
+        factBtn.textContent = locked ? "🔒 Fact-check" : "Fact-check";
+        factBtn.classList.toggle("locked", locked);
+      }
+    }
 
     mount.append(bar);
-
-    // Decorate the lock state (async; the bar shows immediately meanwhile).
-    refreshControls();
+    refreshControls().catch(() => {});
   }
 
   g.VerilensActions = { attach };

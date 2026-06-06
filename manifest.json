@@ -20,6 +20,7 @@
         "content/adapters/twitter.js",
         "content/badge.js",
         "content/actions.js",
+        "content/filter.js",
         "content/content.js"
       ],
       "run_at": "document_idle",
@@ -33,6 +34,7 @@
     }
   ],
   "action": {
-    "default_title": "Verilens"
+    "default_title": "Verilens",
+    "default_popup": "popup/popup.html"
   }
 }

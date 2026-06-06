@@ -20,19 +20,33 @@
 
     const data = adapter.extractPostData(postEl);
 
-    // M1 = image deepfake only. Skip posts with no analyzable image so we don't
-    // clutter every text-only tweet with a button.
-    if (!data || data.imageUrls.length === 0) {
+    // Attach if there's anything to act on: media (image/video) enables the
+    // deepfake button; text enables fact-check. Skip only truly empty posts.
+    const hasMedia = data && (data.imageUrls.length > 0 || data.hasVideo);
+    const hasText = data && (data.captionText || "").trim().length > 0;
+    if (!data || (!hasMedia && !hasText)) {
       postEl.dataset.verilens = "skip";
       return;
     }
 
     postEl.dataset.verilens = "done";
     const anchor = adapter.getActionAnchor(postEl);
-    window.VerilensActions.attach(postEl, data, anchor);
+    // attach() is async and fire-and-forget; swallow any rejection (e.g. the
+    // context dying mid-attach) so it never surfaces as an uncaught rejection.
+    Promise.resolve(window.VerilensActions.attach(postEl, data, anchor)).catch(() => {});
+  }
+
+  // If the extension was reloaded, this content script is orphaned — stop
+  // observing so we don't keep throwing "context invalidated".
+  function alive() {
+    return !!(window.chrome && chrome.runtime && chrome.runtime.id);
   }
 
   function scan() {
+    if (!alive()) {
+      observer.disconnect();
+      return;
+    }
     adapter.findPosts().forEach(processPost);
   }
 
@@ -47,10 +61,33 @@
 
   const debouncedScan = debounce(scan, 300);
 
+  // X fires a LOT of DOM mutations while scrolling; most have nothing to do with
+  // new posts. Only bother scanning when a mutation actually adds article-like
+  // nodes — this keeps the observer cheap and the feed smooth.
+  function addsArticles(mutations) {
+    for (const m of mutations) {
+      for (const n of m.addedNodes) {
+        if (n.nodeType !== 1) continue; // elements only
+        if ((n.matches && n.matches("article")) || (n.querySelector && n.querySelector("article"))) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   // X is a single-page app that streams posts in as you scroll, so we watch the
   // DOM and re-scan. (Button injection only — no network.)
-  const observer = new MutationObserver(debouncedScan);
+  const observer = new MutationObserver((mutations) => {
+    if (addsArticles(mutations)) debouncedScan();
+  });
   observer.observe(document.body, { childList: true, subtree: true });
 
   scan(); // initial pass for whatever's already on screen
+
+  // Start the AUTOMATIC content filter (premium). It self-gates on tier +
+  // settings and runs its OWN observer; for free users it stays dormant.
+  if (window.VerilensFilter) {
+    window.VerilensFilter.init(adapter);
+  }
 })();
