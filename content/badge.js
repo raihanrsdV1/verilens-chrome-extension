@@ -65,22 +65,54 @@
 
     sectionHead(section, "Deepfake check", result.cached);
 
+    // ── Trust level 1 & 2: CONFIRMED AI via verifiable provenance ──
+    // C2PA (local) or SynthID (backend). This is evidence, not a model guess —
+    // shown in red ("AI"), with the standard named.
+    if (result.confirmed) {
+      const row = el("div", "verilens-verdict-row red");
+      row.append(el("span", "verilens-dot"));
+      row.append(el("span", "verilens-verdict-label", "Confirmed AI"));
+      section.append(row);
+
+      const via =
+        result.confirmed === "c2pa"
+          ? "✓ C2PA Content Credentials" +
+            (result.provenance && result.provenance.source ? " · " + result.provenance.source : "")
+          : "✓ SynthID watermark";
+      section.append(el("div", "verilens-provenance confirmed", via));
+
+      if (result.explanation) section.append(el("p", "verilens-explain", result.explanation));
+      return;
+    }
+
+    // ── Trust level 3: probabilistic MODEL assessment ──
     const media = result.media || {};
     const band = result.band || "amber";
 
-    // Use whichever modality was actually analyzed for the headline %: image if
-    // present, otherwise the video result (for video-only posts on premium).
+    // Headline % comes from whichever modality was analyzed (image, else video).
     let primary = null;
     if (media.image && media.image.available !== false) primary = media.image;
     else if (media.video && media.video.available) primary = media.video;
 
     const verdictRow = el("div", "verilens-verdict-row " + band);
     verdictRow.append(el("span", "verilens-dot"));
-    verdictRow.append(el("span", "verilens-verdict-label", BAND_LABEL[band] || "Uncertain"));
+    const modelLabel = band === "red" ? "Likely AI-generated" : BAND_LABEL[band] || "Uncertain";
+    verdictRow.append(el("span", "verilens-verdict-label", modelLabel));
     if (primary && typeof primary.aiGenerated === "number") {
       verdictRow.append(el("span", "verilens-prob", Math.round(primary.aiGenerated * 100) + "% AI"));
     }
     section.append(verdictRow);
+
+    // Provenance line for the absent case — NEUTRAL, never reassuring. We do NOT
+    // say "no watermark = real"; we clarify the verdict above is a model call.
+    if (result.provenance) {
+      const note =
+        result.provenance.synthid === "uncertain"
+          ? "No C2PA credentials; SynthID inconclusive — verdict above is our model's assessment."
+          : "No verifiable provenance found — verdict above is our model's assessment.";
+      section.append(el("div", "verilens-provenance absent", note));
+    }
+
     const hints = [];
     if (media.video && media.video.available === false && media.video.reason === "premium_required") {
       hints.push("Video analysis is a premium feature.");

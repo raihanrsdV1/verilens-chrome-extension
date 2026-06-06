@@ -69,7 +69,7 @@
   }
 
   // ---- blur / reveal -------------------------------------------------------
-  function blurPost(postEl, matchedLabels) {
+  function blurPost(postEl, matchedLabels, provenance) {
     if (!alive()) return;
     if (postEl.dataset.verilensFilter === "blurred") return;
     postEl.dataset.verilensFilter = "blurred";
@@ -99,6 +99,10 @@
     const labels = matchedLabels.map((l) => CATEGORY_LABEL[l] || l).join(", ");
     overlay.append(el("div", "verilens-filter-badge", "🛡 Hidden by Verilens"));
     overlay.append(el("div", "verilens-filter-cats", labels));
+    // Local C2PA proof → say it's confirmed, not just classified.
+    if (provenance === "c2pa") {
+      overlay.append(el("div", "verilens-filter-conf", "✓ Confirmed AI · C2PA"));
+    }
     const showBtn = el("button", "verilens-filter-show", "Show anyway");
     showBtn.addEventListener("click", () => revealPost(postEl));
     overlay.append(showBtn);
@@ -218,7 +222,7 @@
       const postEl = byId.get(r.postId);
       if (!postEl) continue;
       const matched = (r.labels || []).filter((l) => state.categories[l]);
-      if (matched.length) blurPost(postEl, matched);
+      if (matched.length) blurPost(postEl, matched, r.provenance);
       else postEl.dataset.verilensFilter = "clean";
     }
     byId.forEach((postEl, id) => {

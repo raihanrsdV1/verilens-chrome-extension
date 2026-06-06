@@ -137,6 +137,19 @@
   color: #c4c9ce;
 }
 
+/* Provenance lines */
+.verilens-provenance {
+  margin-top: 6px;
+  font-size: 12px;
+}
+.verilens-provenance.confirmed {
+  color: #e74c3c; /* red — confirmed AI, NOT a "safe" green */
+  font-weight: 700;
+}
+.verilens-provenance.absent {
+  color: #8b98a5; /* muted/neutral — absence is never reassuring */
+}
+
 .verilens-error {
   font-size: 12.5px;
   color: #e74c3c;
@@ -268,6 +281,11 @@
   color: #f39c12;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+.verilens-filter-conf {
+  font-size: 11px;
+  font-weight: 700;
+  color: #e74c3c;
 }
 .verilens-filter-show {
   margin-top: 4px;

@@ -16,12 +16,15 @@ importScripts(
   "lib/tiers.js",
   "lib/hash.js",
   "lib/cache.js",
+  "lib/provenanceLocalMock.js",
+  "lib/provenanceLocal.js",
   "lib/mockBackend.js"
 );
 
 const Cache = self.VerilensCache;
 const Mock = self.VerilensMock;
 const Tiers = self.VerilensTiers;
+const Provenance = self.VerilensProvenance;
 
 const TIER_KEY = "verilens_tier";
 
@@ -68,18 +71,51 @@ async function handleDeepfake(payload) {
     return { ...cachedVerdict, cached: true };
   }
 
-  // 2) Cache miss → real work. Simulate first-scan latency so the UI gets to
-  //    show loading states. (Real backend will have its own latency here.)
-  log("deepfake = cache miss; calling mock backend (tier:", tier + ")");
+  // 2) STAGE A — LOCAL provenance pre-check (C2PA). No model, no backend. A
+  //    signed credential declaring AI is authoritative → confirm instantly and
+  //    skip the pipeline entirely. ABSENCE proves nothing → fall through.
+  const prov = await Provenance.check(payload);
+  if (prov.state === "present" && prov.standard === "c2pa") {
+    log("deepfake = STAGE A HIT (C2PA present) — backend SKIPPED, source:", prov.source);
+    const confirmedResult = buildC2PAConfirmed(payload, prov);
+    confirmedResult.cached = false;
+    await Cache.setVerdict(payload.postId, confirmedResult, "deepfake");
+    return confirmedResult;
+  }
+
+  // 3) STAGE B — backend (mock). Simulate first-scan latency so the UI gets to
+  //    show loading states. (Real backend runs SynthID + the heavy pipeline.)
+  log("deepfake = Stage A absent; calling backend (tier:", tier + ")");
   await delay(400 + Math.floor(Math.random() * 500)); // 400–900ms
 
   const result = Mock.deepfake(payload, tier);
   result.cached = false;
 
-  // 3) Persist to the mirror so the next scan is instant.
   await Cache.setVerdict(payload.postId, result, "deepfake");
   log("deepfake → returning result:", result);
   return result;
+}
+
+// Build a high-confidence "Confirmed AI" verdict from a local C2PA hit. No model
+// numbers are invented — the credential itself is the evidence.
+function buildC2PAConfirmed(payload, prov) {
+  return {
+    postId: payload.postId,
+    band: "red",
+    confirmed: "c2pa",
+    provenance: { c2pa: "present", synthid: "not_checked", source: prov.source },
+    media: {
+      image: { available: true, aiGenerated: 0.99, verdict: "likely_ai" },
+      video: payload.hasVideo
+        ? { available: false, reason: "not_checked" }
+        : { available: false, reason: "no_video" },
+      audio: payload.hasAudio
+        ? { available: false, reason: "not_checked" }
+        : { available: false, reason: "no_audio" },
+    },
+    explanation:
+      "This image carries signed C2PA Content Credentials declaring it was generated or edited with AI. That's a verifiable provenance signal — no model guess needed.",
+  };
 }
 
 // ---- Fact-check scan -------------------------------------------------------
@@ -146,6 +182,23 @@ async function handleClassify(payload) {
     // Cheap path → short delay (vs. the heavy pipelines above).
     await delay(150 + Math.floor(Math.random() * 200)); // 150–350ms
     const fresh = Mock.classify({ posts: toClassify }).results;
+    const byId = new Map(fresh.map((r) => [r.postId, r]));
+
+    // LOCAL C2PA on the filter path: it's free and instant (no API), so we run
+    // it on every post here. A signed credential is a definitive "ai_generated"
+    // signal — add the label even if the cheap classifier missed it.
+    await Promise.all(
+      toClassify.map(async (p) => {
+        const r = byId.get(p.postId);
+        if (!r) return;
+        const prov = await Provenance.check(p);
+        if (prov.state === "present" && prov.standard === "c2pa") {
+          if (!r.labels.includes("ai_generated")) r.labels.push("ai_generated");
+          r.provenance = "c2pa"; // mark the source so the filter can show "Confirmed"
+        }
+      })
+    );
+
     // One batched write instead of one write per post.
     await Cache.setManyVerdicts(
       fresh.map((r) => ({ postId: r.postId, verdict: r })),

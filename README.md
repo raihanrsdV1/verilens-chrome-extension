@@ -156,6 +156,15 @@ Build all UI against these exact shapes. When the real backend is ready, only th
     "video": { "available": false, "reason": "premium_required" },
     "audio": { "available": false, "reason": "premium_required" }
   },
+  // Provenance. `confirmed` is set when verifiable provenance proves AI; the
+  // backend supplies provenance.synthid (the extension never computes it). C2PA
+  // is resolved locally in Stage A and short-circuits before the backend.
+  "confirmed": "c2pa | synthid | null",
+  "provenance": {
+    "c2pa": "present | absent",
+    "synthid": "present | absent | uncertain",
+    "source": "Adobe Firefly | null"
+  },
   "band": "green|amber|red",
   "explanation": "Plain-English, 2-3 sentences."
 }
@@ -202,6 +211,26 @@ A free user hitting a gated feature instead receives a short-circuit response fr
 - **Latency & cache flag are owned by the worker, not the mock.** The worker only calls the mock on a cache **miss**, and adds the artificial 400–900ms (deepfake) / 500–1200ms (fact-check) delay there — exactly how the real backend split will behave, so loading states are real.
 
 Swapping in the real backend = replace the `Mock.deepfake(...)` / `Mock.factcheck(...)` calls in `service-worker.js` with `fetch()` calls to the contract endpoints. The cache, gating, and UI are untouched.
+
+---
+
+## Provenance pre-check (two-stage, split by where it can run)
+
+Before the probabilistic deepfake pipeline runs, we check for **verifiable provenance**. The split is dictated by runtime reality:
+
+### Stage A — LOCAL (in the extension), [`lib/provenanceLocal.js`](lib/provenanceLocal.js)
+- Parses **C2PA / Content Credentials** — an open, *signed-metadata* standard. This needs only a parser (no ML model, no key, no remote code), so it runs locally and instantly.
+- Wired in the **service worker before the backend call**. A signed credential declaring AI → **instant "Confirmed AI"**, no backend request.
+- Mock: [`lib/provenanceLocalMock.js`](lib/provenanceLocalMock.js) (~20% return `present`, `<50ms`). **TODO(real):** drop in the in-browser `c2pa` JS SDK (needs image bytes → add a host permission for the image origin).
+
+### Stage B — BACKEND, **SynthID**
+- **There is no local SynthID detector** — SynthID image detection is Google/OpenAI's hosted, keyed service. The extension **never computes it**. The backend runs it as one pipeline signal and returns it as `provenance.synthid`.
+
+### Correctness rule (critical)
+- Provenance **present** (C2PA local *or* SynthID backend) → **high-confidence AI**.
+- Provenance **absent** → **inconclusive**, fall through to the model. **Never** render absence as "real"/green — the UI only shows the model's own verdict in that case.
+
+The deepfake verdict therefore carries two extra fields (see below): `confirmed` and `provenance`.
 
 ---
 
