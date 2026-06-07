@@ -225,6 +225,38 @@ async function handleClassify(payload) {
   return { results };
 }
 
+// ---- AI Text Detection -----------------------------------------------------
+async function handleDetectText(payload) {
+  log("detectText ← received payload:", payload);
+  const tier = await getTier();
+
+  if (!Tiers.isAllowed("detectText", tier)) {
+    log("detectText = GATED (tier:", tier + ") — backend NOT called");
+    return {
+      gated: true,
+      feature: "detectText",
+      message: "AI text detection is a premium feature. Upgrade to Premium to analyze highlighted text.",
+    };
+  }
+
+  const cachedVerdict = await Cache.getVerdict(payload.textHash, "detectText");
+  if (cachedVerdict) {
+    log("detectText = CACHE HIT for textHash", payload.textHash);
+    return { ...cachedVerdict, cached: true };
+  }
+
+  log("detectText = cache miss; calling mock backend");
+  await delay(400 + Math.floor(Math.random() * 500)); // 400–900ms
+
+  const result = Mock.detectText(payload);
+  result.cached = false;
+
+  await Cache.setVerdict(payload.textHash, result, "detectText");
+  await bumpStat("detectTextScans");
+  log("detectText → returning result:", result);
+  return result;
+}
+
 // ---- Message router --------------------------------------------------------
 // Returning `true` keeps the sendResponse channel open for async work.
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -237,6 +269,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
     case "SCAN_FACTCHECK":
       handleFactcheck(msg.payload)
+        .then(sendResponse)
+        .catch((e) => sendResponse({ error: String(e) }));
+      return true;
+
+    case "DETECT_TEXT":
+      handleDetectText(msg.payload)
         .then(sendResponse)
         .catch((e) => sendResponse({ error: String(e) }));
       return true;

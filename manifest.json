@@ -35,7 +35,8 @@
         "content/badge.js",
         "content/actions.js",
         "content/filter.js",
-        "content/content.js"
+        "content/content.js",
+        "content/textSelection.js"
       ],
       "run_at": "document_idle",
       "all_frames": false
