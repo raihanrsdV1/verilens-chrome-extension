@@ -133,11 +133,35 @@
     g.VerilensBadge.renderDeepfake(mount, res);
   }
 
-  async function runFactcheck(data, mount, btn, refreshControls) {
+  async function runFactcheck(data, mount, btn, refreshControls, postEl) {
     log("→ SCAN_FACTCHECK request payload:", data);
     let res;
     await withLoading(btn, "Checking…", async () => {
       try {
+        if (data.hasVideo && postEl) {
+          try {
+            const videoEl = window.VerilensVideoFrames.findVideoElement(null, postEl);
+            if (videoEl) {
+              data.videoFrames = await window.VerilensVideoFrames.extractVideoFrames(videoEl);
+              if (data.videoFrames.length > 0) {
+                console.log("[Verilens] Extracted", data.videoFrames.length, "video frames for factcheck");
+              }
+            }
+          } catch (e) {
+            console.warn("[Verilens] Video frame extraction failed:", e);
+          }
+        }
+        if (data.hasVideo) {
+          const Adapters = window.VerilensAdapters || {};
+          const h = location.hostname;
+          const a = h.endsWith("x.com") || h.endsWith("twitter.com") ? Adapters.twitter :
+                    h.endsWith("instagram.com") ? Adapters.instagram :
+                    h.endsWith("facebook.com") ? Adapters.facebook : null;
+          if (a && a.extractVideoUrl) {
+            const videoUrl = a.extractVideoUrl(postEl);
+            if (videoUrl) data.videoUrl = videoUrl;
+          }
+        }
         res = await chrome.runtime.sendMessage({ type: "SCAN_FACTCHECK", payload: data });
       } catch (e) {
         res = { error: String(e) };
@@ -149,7 +173,7 @@
       g.VerilensBadge.renderUpgrade(
         mount,
         { kind: "factcheck", message: res.message },
-        makeUpgradeHandlers(refreshControls, () => runFactcheck(data, mount, btn, refreshControls))
+        makeUpgradeHandlers(refreshControls, () => runFactcheck(data, mount, btn, refreshControls, postEl))
       );
       return;
     }
@@ -198,7 +222,7 @@
     if (showFactcheck) {
       factBtn = el("button", "verilens-btn", "Fact-check");
       factBtn.title = "Verify the claims in this post against trusted sources";
-      factBtn.addEventListener("click", () => runFactcheck(data, mount, factBtn, refreshControls));
+      factBtn.addEventListener("click", () => runFactcheck(data, mount, factBtn, refreshControls, postEl));
       bar.append(factBtn);
     }
 

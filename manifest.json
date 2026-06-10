@@ -13,7 +13,9 @@
     "https://*.cdninstagram.com/*",
     "https://www.facebook.com/*",
     "https://facebook.com/*",
-    "https://*.fbcdn.net/*"
+    "https://*.fbcdn.net/*",
+    "https://verilens-claim-extractor.vercel.app/*",
+    "https://fact-verifier.vercel.app/*"
   ],
   "background": {
     "service_worker": "service-worker.js"
@@ -37,7 +39,8 @@
         "content/filter.js",
         "content/content.js",
         "content/textSelection.js",
-        "content/imageHover.js"
+        "content/imageHover.js",
+        "content/videoFrameExtractor.js"
       ],
       "run_at": "document_idle",
       "all_frames": false
@@ -45,7 +48,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["content/styles.css"],
+      "resources": ["content/styles.css", "content/videoFrameExtractor.js"],
       "matches": [
         "https://x.com/*",
         "https://twitter.com/*",

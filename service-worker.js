@@ -16,6 +16,7 @@ importScripts(
   "lib/tiers.js",
   "lib/hash.js",
   "lib/cache.js",
+  "lib/config.js",
   "lib/provenanceLocalMock.js",
   "lib/provenanceLocal.js",
   "lib/mockBackend.js"
@@ -25,6 +26,7 @@ const Cache = self.VerilensCache;
 const Mock = self.VerilensMock;
 const Tiers = self.VerilensTiers;
 const Provenance = self.VerilensProvenance;
+const Config = self.VerilensConfig;
 
 const TIER_KEY = "verilens_tier";
 
@@ -136,8 +138,6 @@ async function handleFactcheck(payload) {
   log("factcheck ← received payload:", payload);
   const tier = await getTier();
 
-  // Tier gate FIRST. Fact-check runs an expensive agent + search, so for free
-  // users we short-circuit with an upgrade prompt and NEVER call the backend.
   if (!Tiers.isAllowed("factCheck", tier)) {
     log("factcheck = GATED (tier:", tier + ") — backend NOT called");
     return {
@@ -148,23 +148,92 @@ async function handleFactcheck(payload) {
     };
   }
 
-  // Separate cache namespace from deepfake.
   const cachedVerdict = await Cache.getVerdict(payload.postId, "factcheck");
   if (cachedVerdict) {
     log("factcheck = CACHE HIT for postId", payload.postId);
     return { ...cachedVerdict, cached: true };
   }
 
-  log("factcheck = cache miss; calling mock backend");
-  await delay(500 + Math.floor(Math.random() * 700)); // 500–1200ms (agent is slower)
+  log("factcheck = cache miss; calling real API at", Config.FACTCHECK_API);
 
-  const result = Mock.factcheck(payload);
-  result.cached = false;
+  const apiPayload = {
+    postId: payload.postId,
+    captionText: payload.captionText || "",
+    imageUrls: payload.imageUrls || [],
+  };
 
-  await Cache.setVerdict(payload.postId, result, "factcheck");
-  await bumpStat("factCheckScans");
-  log("factcheck → returning result:", result);
-  return result;
+  if (payload.videoFrames && payload.videoFrames.length > 0) {
+    apiPayload.videoFrames = payload.videoFrames;
+  }
+
+  if (payload.videoUrl) {
+    apiPayload.videoUrl = payload.videoUrl;
+  }
+  if (payload.audioUrl) {
+    apiPayload.audioUrl = payload.audioUrl;
+  }
+
+  try {
+    const response = await fetch(Config.FACTCHECK_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(apiPayload),
+      signal: AbortSignal.timeout(290000),
+    });
+
+    if (!response.ok) {
+      let errMsg = `API HTTP ${response.status}`;
+      try { const j = await response.json(); errMsg = j.error || errMsg; } catch {}
+      throw new Error(errMsg);
+    }
+
+    const extractResult = await response.json();
+    const claims = extractResult.claims || [];
+
+    // Step 2: verify extracted claims against web evidence
+    if (claims.length > 0) {
+      log("factcheck → verifying " + claims.length + " claim(s) via", Config.VERIFY_API);
+      try {
+        const verifyResponse = await fetch(Config.VERIFY_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ postId: payload.postId, claims: claims }),
+          signal: AbortSignal.timeout(290000),
+        });
+
+        if (verifyResponse.ok) {
+          const verifyResult = await verifyResponse.json();
+          // Merge verification verdicts back into the extraction result
+          extractResult.claims = verifyResult.claims || claims;
+          extractResult.overall = verifyResult.overall || extractResult.overall;
+          extractResult.explanation = verifyResult.explanation || extractResult.explanation;
+          log("factcheck → verified: overall=" + extractResult.overall);
+        } else {
+          log("factcheck → verify API returned", verifyResponse.status, "(using unverified claims)");
+        }
+      } catch (verifyErr) {
+        log("factcheck → verify API error:", verifyErr.message, "(using unverified claims)");
+      }
+    }
+
+    extractResult.cached = false;
+
+    await Cache.setVerdict(payload.postId, extractResult, "factcheck");
+    await bumpStat("factCheckScans");
+    log("factcheck → returning result:", extractResult);
+    return extractResult;
+  } catch (e) {
+    log("factcheck = API ERROR:", e.message);
+    return {
+      postId: payload.postId,
+      cached: false,
+      error: true,
+      message: `Fact-check backend unavailable: ${e.message}`,
+      claims: [],
+      overall: "unverifiable",
+      explanation: "The fact-check backend could not be reached. Try again later.",
+    };
+  }
 }
 
 // ---- Classify (auto-filter, cheap batched path) ----------------------------

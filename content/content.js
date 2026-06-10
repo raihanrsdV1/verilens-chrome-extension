@@ -12,6 +12,8 @@
 (function () {
   const Adapters = window.VerilensAdapters || {};
 
+  chrome.runtime.getURL("content/videoFrameExtractor.js");
+
   // Pick the adapter for the current site. x.com and twitter.com share the
   // Twitter DOM, so they map to the same adapter.
   function pickAdapter() {
