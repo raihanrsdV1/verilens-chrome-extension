@@ -28,14 +28,16 @@ image/video.
 
 ## Config file (the ".env" for this extension)
 - `lib/config.local.js` (gitignored) — sets `globalThis.VerilensConfig =
-  {videoBackendUrl, imageBackendUrl}`. The ONLY place backend ngrok URLs live.
-  Loaded FIRST in both `manifest.json`'s `content_scripts[0].js` and
-  `service-worker.js`'s `importScripts`, so `lib/realBackend.js` and
-  `content/actions.js` can read it synchronously off `globalThis`.
+  {videoBackendUrl, imageBackendUrl, textBackendUrl}`. The ONLY place backend
+  ngrok URLs live. Loaded FIRST in both `manifest.json`'s `content_scripts[0].js`
+  and `service-worker.js`'s `importScripts`, so `lib/realBackend.js`,
+  `lib/realTextBackend.js`, and `content/actions.js` can read it synchronously
+  off `globalThis`.
 - `lib/config.local.example.js` (committed) — template with empty strings;
   copy to `lib/config.local.js` and fill in real ngrok URLs.
-- The popup has **no URL input fields** — it only shows read-only connection
-  status for whatever URLs are in `lib/config.local.js`.
+- The popup has **no URL input fields and no backend status UI at all** —
+  backend health is invisible to the user; failures silently fall back to the
+  mock for that modality.
 
 ## File map (all paths relative to repo root)
 - `manifest.json` — MV3 config. permissions: `storage` only. host_permissions for
@@ -112,6 +114,12 @@ image/video.
     bypass) → base64 → `POST /detect {image_b64}` → `{is_fake, score}`. Maps is_fake→
     red/likely_ai, else green/likely_real; uses `score` as the %-AI when present, else
     0.9/0.08.
+- `lib/realTextBackend.js` (added) — `VerilensRealTextBackend.{getBackendUrl,
+  detectText}`. Fast-DetectGPT text backend, SW-only, Kaggle+ngrok.
+  `getBackendUrl` reads `globalThis.VerilensConfig.textBackendUrl` (from
+  `lib/config.local.js`) — no chrome.storage involved. `detectText` POSTs
+  `{text}` to `/detect-text` → `{ai_probability, criterion, tokens}`, maps
+  probability to green/amber/red bands (likely_human/mixed/likely_ai).
 - `popup/popup.{html,js,css}` — tabbed popup (⚙ Settings / ❓ Help). No backend
   status/connection UI at all — backend health is invisible to the user; failures
   silently fall back to the mock.
@@ -151,7 +159,7 @@ image/video.
 - `verilens_video_max_seconds` (added) number, default 20 — how many seconds of video
   `prepareThorough` records for the real backend; 0 = "Full video" (120s safety cap).
 
-## The notebook: videoveritas-ai-video-detection.ipynb
+## The notebook: notebooks/videoveritas-ai-video-detection.ipynb
 Kaggle T4 x2 notebook. Installs latest vLLM (Py3.12 wheels), removes flashinfer
 (no sm_75/T4 kernel), uses xformers attention backend, `--enforce-eager`. Downloads
 **EricTanh/VideoVeritas** (~17 GB, a Qwen3-VL-based video real-vs-AI model) from
@@ -163,23 +171,26 @@ Uses `extra_body.mm_processor_kwargs = {fps:2, max_pixels:360*420}` (top-level
 `mm_processor_kwargs` in raw JSON). The server is localhost-only → needs **ngrok** to
 be reachable from the extension.
 
-### ngrok dual-account requirement (running both notebooks at once)
-ngrok's free plan gives each ACCOUNT one shared static domain. If both notebooks
+### ngrok triple-account requirement (running multiple notebooks at once)
+ngrok's free plan gives each ACCOUNT one shared static domain. If two notebooks
 use the same authtoken, the second `ngrok.connect()` fails with `ERR_NGROK_334`
 ("endpoint ... is already online"). Fix: use a SEPARATE free ngrok account +
 authtoken per notebook:
-- `videoveritas-ai-video-detection.ipynb` → Kaggle Secret `NGROK_AUTH_TOKEN_VIDEO`
+- `notebooks/videoveritas-ai-video-detection.ipynb` → Kaggle Secret
+  `NGROK_AUTH_TOKEN_VIDEO` (falls back to `NGROK_AUTH_TOKEN`).
+- `notebooks/fsd-image-detector.ipynb` → Kaggle Secret `NGROK_AUTH_TOKEN_IMAGE`
   (falls back to `NGROK_AUTH_TOKEN`).
-- `fsd-image-detector.ipynb` → Kaggle Secret `NGROK_AUTH_TOKEN_IMAGE` (falls back to
+- `notebooks/fast-gpt.ipynb` → Kaggle Secret `NGROK_AUTH_TOKEN_TEXT` (falls back to
   `NGROK_AUTH_TOKEN`).
-Both ngrok cells now print "Paste that URL into `lib/config.local.js`" instead of
-the old popup-field instructions.
+All three ngrok cells print "Paste that URL into `lib/config.local.js`" with the
+corresponding `*BackendUrl` field name — no popup-field instructions anywhere.
 
 ## How the real VideoVeritas integration works (what I built)
 1. Notebook: an added cell installs pyngrok and opens an HTTP tunnel to port 8000,
    printing the public `https://*.ngrok-*.app` URL.
-2. User pastes that URL into `lib/config.local.js` → `videoBackendUrl`. The popup's
-   "AI model backends" card pings it read-only via SW `PING_BACKEND` → GET /v1/models.
+2. User pastes that URL into `lib/config.local.js` → `videoBackendUrl`. There's no
+   popup status UI — `ping` (GET /v1/models) is only used internally to discover the
+   served model id before a real scan.
 3. When a **premium** user clicks "Check media" on a post **with video** and a backend
    URL is set, `actions.runDeepfake(…, postEl)` calls
    `videoCapture.prepareThorough(videoUrl, postEl.querySelector("video"))` BEFORE
@@ -202,7 +213,7 @@ the old popup-field instructions.
 
 ## How the real FSD image integration works (what I built)
 Mirrors the video path but simpler (no MSE problem — images are plain CDN URLs):
-1. Notebook `fsd-image-detector.ipynb` clones the FSD repo, loads `FSDDetector`, and
+1. Notebook `notebooks/fsd-image-detector.ipynb` clones the FSD repo, loads `FSDDetector`, and
    (added cells) serves it via a tiny FastAPI app (`/health`, `/detect`) on port 8000,
    tunneled with ngrok. Paste the URL into `lib/config.local.js` → `imageBackendUrl`.
 2. `service-worker.handleDeepfake` runs the image real-detection block AFTER the
@@ -224,7 +235,7 @@ the model still gets what's buffered. Do NOT "fix" capture with
 `captureStream()`/`MediaRecorder` on the page `<video>` — it crashed the renderer on
 MSE players; see content/videoCapture.js.
 
-## The notebook: fsd-image-detector.ipynb
+## The notebook: notebooks/fsd-image-detector.ipynb
 Kaggle GPU (T4/P100) notebook. Clones **Forensic-Self-Descriptions-CVPR25** (FSD,
 CVPR'25), `uv pip install -e .`, then `FSDDetector.load(attribution=False)` +
 `detector.score_batch([paths])` → each result has `.is_fake` (binary real-vs-AI).
@@ -233,6 +244,37 @@ FastAPI app (`/health` → `{ok,model}`, `/detect {image_b64}` → `{is_fake,sco
 run in a daemon thread, exposed via ngrok on port 8000. The `score` field is
 best-effort (FSD may not expose a calibrated probability → null → extension uses a
 default).
+
+## The notebook: notebooks/fast-gpt.ipynb
+Kaggle T4 notebook (added by a teammate). Clones **fast-detect-gpt**
+(baoguangsheng/fast-detect-gpt), installs torch/transformers, and loads
+`FastDetectGPT` configured with `gpt-neo-2.7B` for both the sampling and scoring
+models (fits on a T4). `detector.compute_prob(text)` → `(prob, criterion, ntokens)`
+where `prob` is the probability the text is AI-generated. Cell 4 (optional, ~15min)
+evaluates 1000 samples from `AI_Human.csv` and prints accuracy/precision/recall/F1 —
+not needed to serve the API. Serving cells: a FastAPI app (`/health` →
+`{status,model}`, `POST /detect-text {text}` → `{ai_probability, criterion, tokens}`)
+run in a daemon thread via uvicorn, exposed via ngrok on port 8000 (reads Kaggle
+Secret `NGROK_AUTH_TOKEN_TEXT`, falls back to `NGROK_AUTH_TOKEN`). Paste the printed
+URL into `lib/config.local.js` → `textBackendUrl`.
+
+## How the real Fast-DetectGPT text integration works
+Mirrors the image path — single synchronous request, no media capture:
+1. Notebook `notebooks/fast-gpt.ipynb` serves Fast-DetectGPT over `/detect-text` and
+   prints an ngrok URL; paste it into `lib/config.local.js` → `textBackendUrl`.
+2. User selects text on the page → `content/textSelection.js` shows a floating
+   "🛡 Check AI" button → sends `DETECT_TEXT` with `{text}`.
+3. `service-worker.handleDetectText` calls `RealTextBackend.getBackendUrl()`; if a
+   `textBackendUrl` is set, calls `RealTextBackend.detectText({text})` — POSTs
+   `{text}` to `/detect-text` and gets back `{ai_probability, criterion, tokens}`.
+4. `detectText` maps `ai_probability` to a band: `<0.4` → green/likely_human,
+   `<0.7` → amber/mixed, else red/likely_ai, with a canned explanation per band, and
+   tags `source: "fast-detect-gpt"`.
+5. If no backend / no URL / request fails → falls back to `Mock.detectText` so the
+   feature still works without the notebook running. Result is shaped to the
+   detect-text contract (`{textHash, cached, aiGenerated, band, verdict,
+   explanation}`) and cached. AI text detection is a **Premium** feature (`detectText`
+   in `lib/tiers.js`).
 
 ## Conventions / rules
 - Keep the capabilities separate; never one merged score.

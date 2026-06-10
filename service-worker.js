@@ -20,7 +20,8 @@ importScripts(
   "lib/provenanceLocalMock.js",
   "lib/provenanceLocal.js",
   "lib/mockBackend.js",
-  "lib/realBackend.js"
+  "lib/realBackend.js",
+  "lib/realTextBackend.js"
 );
 
 const Cache = self.VerilensCache;
@@ -28,6 +29,7 @@ const Mock = self.VerilensMock;
 const Tiers = self.VerilensTiers;
 const Provenance = self.VerilensProvenance;
 const RealBackend = self.VerilensRealBackend;
+const RealTextBackend = self.VerilensRealTextBackend;
 
 const TIER_KEY = "verilens_tier";
 
@@ -339,7 +341,22 @@ async function handleDetectText(payload) {
     return { ...cachedVerdict, cached: true };
   }
 
-  log("detectText = cache miss; calling mock backend");
+  // Try the real Fast-DetectGPT backend first. Any failure falls through to mock.
+  const textBackendUrl = await RealTextBackend.getBackendUrl();
+  if (textBackendUrl) {
+    log("detectText = calling REAL Fast-DetectGPT backend:", textBackendUrl);
+    const v = await RealTextBackend.detectText({ text: payload.text || payload.selectedText || "" });
+    if (v && !v.error) {
+      const result = { textHash: payload.textHash, cached: false, ...v };
+      await Cache.setVerdict(payload.textHash, result, "detectText");
+      await bumpStat("detectTextScans");
+      log("detectText → REAL result:", result);
+      return result;
+    }
+    log("detectText = real backend unavailable (" + (v && v.error) + ") — falling back to mock");
+  }
+
+  log("detectText = calling mock backend");
   await delay(400 + Math.floor(Math.random() * 500)); // 400–900ms
 
   const result = Mock.detectText(payload);

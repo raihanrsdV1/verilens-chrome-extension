@@ -298,7 +298,8 @@ Click the **↻ reload** icon on the Verilens card, then **hard-refresh** the x.
 Without any configuration, Verilens runs entirely on the **mock backend** —
 deterministic fake results, no setup required.
 
-To connect the real hosted models (VideoVeritas for video, FSD for images):
+To connect the real hosted models (VideoVeritas for video, FSD for images,
+Fast-DetectGPT for text):
 
 1. Copy the example config:
    ```sh
@@ -306,14 +307,16 @@ To connect the real hosted models (VideoVeritas for video, FSD for images):
    ```
    `lib/config.local.js` is **gitignored** — it's the only place backend URLs
    live. There are **no URL fields in the popup**.
-2. Run the model notebooks on Kaggle:
-   - [`videoveritas-ai-video-detection.ipynb`](videoveritas-ai-video-detection.ipynb) — serves the video deepfake model and prints an ngrok URL.
-   - [`fsd-image-detector.ipynb`](fsd-image-detector.ipynb) — serves the image deepfake model and prints an ngrok URL.
+2. Run the model notebooks on Kaggle (all under [`notebooks/`](notebooks/)):
+   - [`notebooks/videoveritas-ai-video-detection.ipynb`](notebooks/videoveritas-ai-video-detection.ipynb) — serves the video deepfake model and prints an ngrok URL.
+   - [`notebooks/fsd-image-detector.ipynb`](notebooks/fsd-image-detector.ipynb) — serves the image deepfake model and prints an ngrok URL.
+   - [`notebooks/fast-gpt.ipynb`](notebooks/fast-gpt.ipynb) — serves the AI text detection model and prints an ngrok URL.
 3. Paste the printed URLs into `lib/config.local.js`:
    ```js
    g.VerilensConfig = {
      videoBackendUrl: "https://xxxx.ngrok-free.app", // from videoveritas-ai-video-detection.ipynb
      imageBackendUrl: "https://yyyy.ngrok-free.app", // from fsd-image-detector.ipynb
+     textBackendUrl: "https://zzzz.ngrok-free.app", // from fast-gpt.ipynb
    };
    ```
    Leave a value as `""` to keep using the mock for that modality.
@@ -322,22 +325,24 @@ To connect the real hosted models (VideoVeritas for video, FSD for images):
 If a configured backend is unreachable (or the URL is empty), Verilens
 silently falls back to the mock — "Check media" always returns a result.
 
-### Running both notebooks at the same time (ngrok)
+### Running multiple notebooks at the same time (ngrok)
 
-ngrok's free plan gives each **account** one shared static domain. If both
+ngrok's free plan gives each **account** one shared static domain. If two
 notebooks authenticate with the **same** authtoken, the second tunnel fails
 with `ERR_NGROK_334` ("endpoint ... is already online").
 
-To run both simultaneously, use a **separate free ngrok account + authtoken**
+To run them simultaneously, use a **separate free ngrok account + authtoken**
 per notebook, added as Kaggle Secrets:
 - `videoveritas-ai-video-detection.ipynb` reads `NGROK_AUTH_TOKEN_VIDEO`
   (falls back to `NGROK_AUTH_TOKEN`).
 - `fsd-image-detector.ipynb` reads `NGROK_AUTH_TOKEN_IMAGE` (falls back to
   `NGROK_AUTH_TOKEN`).
+- `fast-gpt.ipynb` reads `NGROK_AUTH_TOKEN_TEXT` (falls back to
+  `NGROK_AUTH_TOKEN`).
 
-Just renaming/duplicating the same token under both secret names does **not**
-fix the conflict — the token has to come from a genuinely different ngrok
-account.
+Just renaming/duplicating the same token under multiple secret names does
+**not** fix the conflict — each token has to come from a genuinely different
+ngrok account.
 
 ---
 
