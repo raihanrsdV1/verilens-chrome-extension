@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verilens — Deepfake & Misinformation Detector</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="config.js"></script>
+</head>
+<body>
+  <!-- Scroll progress: fills left→right as you move down the page. -->
+  <div class="scroll-progress" id="scrollProgress"></div>
+
+  <!-- ===== Nav ===== -->
+  <header class="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="#top">
+        <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 2 4 5v6c0 5 3.4 8.4 8 11 4.6-2.6 8-6 8-11V5l-8-3Z" />
+          <path d="m9 12 2 2 4-4" />
+        </svg>
+        <span class="brand-name">Verilens</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#compare">Compare</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme" title="Toggle light / dark"></button>
+    </div>
+  </header>
+
+  <!-- ===== Hero ===== -->
+  <section class="hero" id="top">
+    <div class="container hero-inner">
+      <span class="pill">Chrome Extension · X · Instagram · Facebook</span>
+      <h1 class="hero-title">Catch deepfakes &amp; misinformation<br />before you believe them.</h1>
+      <p class="hero-sub">
+        Verilens scans images, video, and text right inside your social feeds — flagging
+        AI-generated media, verifying claims, and filtering noise. Real forensic models,
+        one click away.
+      </p>
+      <div class="hero-cta">
+        <a href="#pricing" class="btn btn-primary btn-lg">Get Verilens Pro</a>
+        <a href="#features" class="btn btn-ghost btn-lg">See what it does</a>
+      </div>
+      <!-- <div class="hero-badges">
+        <span>Image deepfake check — free</span>
+        <span>Video &amp; audio analysis</span>
+        <span>AI fact-checking</span>
+      </div> -->
+    </div>
+  </section>
+
+  <!-- ===== Features ===== -->
+  <section class="section" id="features">
+    <div class="container">
+      <h2 class="section-title">Four detectors, One extension</h2>
+      <!-- <p class="section-sub">Each capability is kept separate — never one murky "AI score."</p> -->
+      <div class="feature-grid">
+        <div class="feature-card">
+          <span class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-4.5-4.5L5 21" />
+            </svg>
+          </span>
+          <h3>Image deepfake check</h3>
+          <p>Forensic model flags AI-generated images. Includes C2PA &amp; SynthID provenance. <span class="tag-pro">Free</span></p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2" y="5" width="14" height="14" rx="2" /><path d="m22 7-6 5 6 5V7Z" />
+            </svg>
+          </span>
+          <h3>Video &amp; audio analysis</h3>
+          <p>Multimodal model samples frames from any clip to judge real vs. AI. <span class="tag-pro">Pro</span></p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /><path d="M16 13H8M16 17H8M10 9H8" />
+            </svg>
+          </span>
+          <h3>AI fact-checking</h3>
+          <p>An agent verifies claims against trusted sources and rates confidence. <span class="tag-pro">Pro</span></p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3Z" />
+            </svg>
+          </span>
+          <h3>Auto content filter</h3>
+          <p>Blurs AI memes, misinformation &amp; noise as you scroll — with "show anyway." <span class="tag-pro">Pro</span></p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 7V4h16v3M9 20h6M12 4v16" />
+            </svg>
+          </span>
+          <h3>AI text detection</h3>
+          <p>Select any text and instantly check how likely it was written by AI. <span class="tag-pro">Pro</span></p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z" />
+            </svg>
+          </span>
+          <h3>Hover to scan</h3>
+          <p>Hover any image or video for an instant deepfake badge — no clicks. <span class="tag-pro">Pro</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Pricing ===== -->
+  <section class="section section-alt" id="pricing">
+    <div class="container">
+      <h2 class="section-title">Simple, Honest Pricing</h2>
+      <p class="section-sub">Start free. Upgrade when you want the full toolkit.</p>
+
+      <div class="billing-switch">
+        <span class="billing-label" data-active="true" id="labelMonthly">Monthly</span>
+        <label class="switch">
+          <input type="checkbox" id="billingToggle" />
+          <span class="slider"></span>
+        </label>
+        <span class="billing-label" id="labelAnnual">Annual</span>
+        <span class="save-chip" id="saveChip">Save $24/yr</span>
+      </div>
+
+      <div class="plans">
+        <!-- Free -->
+        <div class="plan">
+          <h3 class="plan-name">Free</h3>
+          <div class="plan-price"><span class="amount">$0</span><span class="per">forever</span></div>
+          <p class="plan-desc">Everything you need to spot fake images.</p>
+          <a href="#" class="btn btn-ghost btn-block">Current plan</a>
+          <ul class="plan-features">
+            <li class="incl">Image deepfake detection</li>
+            <li class="incl">C2PA &amp; SynthID provenance</li>
+            <li class="incl">Works on X, Instagram, Facebook</li>
+            <li class="excl">Video &amp; audio analysis</li>
+            <li class="excl">AI fact-checking</li>
+            <li class="excl">Auto content filter</li>
+            <li class="excl">AI text detection</li>
+          </ul>
+        </div>
+
+        <!-- Pro -->
+        <div class="plan plan-featured">
+          <span class="ribbon">Most Popular</span>
+          <h3 class="plan-name">Pro</h3>
+          <div class="plan-price">
+            <span class="amount" id="proAmount">$6.99</span><span class="per" id="proPer">/mo</span>
+          </div>
+          <p class="plan-subprice" id="proSubprice">Billed monthly</p>
+          <p class="plan-desc">The complete deepfake &amp; misinformation toolkit.</p>
+          <button class="btn btn-primary btn-block" id="purchaseBtn">Purchase Pro</button>
+          <ul class="plan-features">
+            <li class="incl"><strong>Everything in Free</strong></li>
+            <li class="incl">Video &amp; audio deepfake analysis</li>
+            <li class="incl">AI fact-checking agent</li>
+            <li class="incl">Auto content filter</li>
+            <li class="incl">AI text detection</li>
+            <li class="incl">Hover-to-scan badge</li>
+            <li class="incl">Priority model access</li>
+          </ul>
+        </div>
+      </div>
+      <!-- <p class="pricing-note">No account needed for this demo — Purchase unlocks Pro in your installed extension instantly.</p> -->
+    </div>
+  </section>
+
+  <!-- ===== Comparison table ===== -->
+  <section class="section" id="compare">
+    <div class="container">
+      <h2 class="section-title">Free vs. Pro at a glance</h2>
+      <div class="table-wrap">
+        <table class="compare">
+          <thead>
+            <tr><th>Feature</th><th>Free</th><th class="col-pro">Pro</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Image deepfake detection</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>C2PA / SynthID provenance</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>Video &amp; audio deepfake analysis</td><td class="no">—</td><td class="yes">✓</td></tr>
+            <tr><td>AI fact-checking agent</td><td class="no">—</td><td class="yes">✓</td></tr>
+            <tr><td>Auto content filter (blur on scroll)</td><td class="no">—</td><td class="yes">✓</td></tr>
+            <tr><td>AI text detection (select &amp; check)</td><td class="no">—</td><td class="yes">✓</td></tr>
+            <tr><td>Hover-to-scan badge</td><td class="no">—</td><td class="yes">✓</td></tr>
+            <tr><td>Supported platforms</td><td>X · IG · FB</td><td class="col-pro">X · IG · FB</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FAQ ===== -->
+  <section class="section section-alt" id="faq">
+    <div class="container faq">
+      <h2 class="section-title">Questions</h2>
+      <details><summary>How does the deepfake detection work?</summary>
+        <p>Verilens runs real forensic AI models — an image forensics model, a multimodal
+        video model, and a text classifier — plus local C2PA/SynthID provenance checks. It
+        keeps each result separate so you always know <em>what</em> was flagged and why.</p>
+      </details>
+      <details><summary>Is my data sent anywhere?</summary>
+        <p>Detection runs against the model backends only when you explicitly click "Check."
+        Nothing is stored or sold. Provenance checks happen locally in your browser.</p>
+      </details>
+      <details><summary>What happens when I click Purchase?</summary>
+        <p>Clicking Purchase signals your
+        installed Verilens extension to unlock Pro on your device.</p>
+      </details>
+      <details><summary>Can I cancel?</summary>
+        <p>Pro is a simple toggle in this build — you can switch back to Free anytime from
+        the extension's settings.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ===== Footer ===== -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span></span>
+      <span class="footer-dim">Verilens — built to keep your feed honest.</span>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

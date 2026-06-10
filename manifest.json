@@ -18,7 +18,9 @@
     "https://*.ngrok-free.app/*",
     "https://*.ngrok.app/*",
     "https://*.ngrok-free.dev/*",
-    "https://*.ngrok.io/*"
+    "https://*.ngrok.io/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
   ],
   "background": {
     "service_worker": "service-worker.js"
@@ -46,6 +48,12 @@
         "content/textSelection.js",
         "content/imageHover.js"
       ],
+      "run_at": "document_idle",
+      "all_frames": false
+    },
+    {
+      "matches": ["http://localhost/*", "http://127.0.0.1/*"],
+      "js": ["content/purchaseUnlock.js"],
       "run_at": "document_idle",
       "all_frames": false
     }

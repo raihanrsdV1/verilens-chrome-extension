@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verilens Pro — Unlocked</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="success-wrap">
+    <div class="success-card">
+      <svg class="success-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 2 4 5v6c0 5 3.4 8.4 8 11 4.6-2.6 8-6 8-11V5l-8-3Z" />
+        <path d="m9 12 2 2 4-4" />
+      </svg>
+      <h1>Welcome to Verilens Pro</h1>
+      <p>Thanks for upgrading — all premium detectors are now yours.</p>
+
+      <div class="success-state pending" id="state">Activating Pro in your extension…</div>
+
+      <a href="index.html" class="btn btn-ghost btn-block">Back to home</a>
+
+      <div class="fallback" id="fallback" hidden>
+        <h3>Extension not detected on this page</h3>
+        <ol>
+          <li>Make sure the Verilens extension is loaded (chrome://extensions).</li>
+          <li>Open the Verilens popup → <strong>Developer → Plan</strong> and switch to Premium.</li>
+          <li>Or reload this page after installing — it will activate automatically.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // The content script (content/purchaseUnlock.js) sets this dataset flag once it
+    // has flipped the extension to premium. Poll briefly; if it never shows up, the
+    // extension isn't watching this page → reveal the manual fallback.
+    (function () {
+      const state = document.getElementById("state");
+      const fallback = document.getElementById("fallback");
+      const start = Date.now();
+
+      const timer = setInterval(() => {
+        if (document.documentElement.dataset.verilensInstalled === "1") {
+          clearInterval(timer);
+          state.textContent = "Pro unlocked — open your feed and enjoy.";
+          state.className = "success-state ok";
+        } else if (Date.now() - start > 1200) {
+          clearInterval(timer);
+          state.textContent = "Couldn't confirm the extension automatically.";
+          state.className = "success-state pending";
+          fallback.hidden = false;
+        }
+      }, 150);
+    })();
+  </script>
+</body>
+</html>

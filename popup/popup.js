@@ -10,6 +10,11 @@
 // AI backend URLs (video/image) are NOT stored here and are not shown in this
 // popup at all — they live in lib/config.local.js (gitignored).
 
+// Where the "Upgrade" button opens the Verilens pricing site. For the local demo
+// this assumes `python -m http.server 8000` from the repo root. Keep in sync with
+// website/config.js → siteUrl.
+const WEBSITE_URL = "http://localhost:8000/website/index.html";
+
 const DEFAULT_CATEGORIES = {
   political: true,
   ai_meme: true,
@@ -147,9 +152,9 @@ els.catInputs.forEach((input) => {
 });
 
 els.upgradeBtn.addEventListener("click", () => {
-  // Real checkout/account flow is out of scope for the mock. The dev Plan switch
-  // (below) is how you actually flip to premium for testing.
-  alert("Verilens Premium — checkout flow coming soon.\n\n(For testing, use Developer → Plan.)");
+  // Opens the Verilens pricing site. Clicking "Purchase" there flips this extension
+  // to Premium automatically (see content/purchaseUnlock.js).
+  chrome.tabs.create({ url: WEBSITE_URL });
 });
 
 els.resetStats.addEventListener("click", async () => {
