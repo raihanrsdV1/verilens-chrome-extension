@@ -17,6 +17,7 @@ body {
   gap: 10px;
   padding: 14px 16px;
   border-bottom: 1px solid #2f3336;
+  background: linear-gradient(180deg, rgba(29,155,240,0.06) 0%, transparent 100%);
 }
 .vl-logo { font-size: 20px; }
 .vl-title { font-size: 15px; font-weight: 700; }
@@ -238,7 +239,97 @@ details[open] .vl-dev-summary::before { content: "▾ "; }
 }
 .vl-dev-link:hover { color: #aab4bd; }
 
-.vl-footer {
+/* Developer diagnostics */
+.vl-dev-section { margin-top: 14px; }
+.vl-dev-head {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #8b98a5;
+  margin-bottom: 8px;
+}
+.vl-api-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 11.5px;
+}
+.vl-dot-sm {
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  border-radius: 50%;
+  background: #3a3f44;
+}
+.vl-dot-sm.green { background: #2ecc71; }
+.vl-dot-sm.amber { background: #f39c12; }
+.vl-dot-sm.red { background: #e74c3c; }
+.vl-api-name { color: #c4c9ce; flex: 1; }
+.vl-api-state { color: #8b98a5; font-size: 11px; }
+.vl-ping-btn {
+  appearance: none;
+  border: 1px solid #2f3336;
+  background: #0e0f12;
+  color: #8b98a5;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.vl-ping-btn:hover { border-color: #1d9bf0; color: #1d9bf0; }
+
+.vl-dev-input {
+  width: 100%;
+  margin-top: 6px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  color: #e7e9ea;
+  background: #0e0f12;
+  border: 1px solid #2f3336;
+  border-radius: 8px;
+  resize: vertical;
+  outline: none;
+}
+.vl-dev-input:focus { border-color: #1d9bf0; }
+
+.vl-dev-btn {
+  width: 100%;
+  margin-top: 8px;
+  appearance: none;
+  border: 1px solid #1d9bf0;
+  background: rgba(29, 155, 240, 0.12);
+  color: #1d9bf0;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.vl-dev-btn:hover { background: rgba(29, 155, 240, 0.22); }
+.vl-dev-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.vl-dev-result {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #0e0f12;
+  border: 1px solid #2f3336;
+  border-radius: 8px;
+  font-family: "SF Mono", "Menlo", "Monaco", monospace;
+  font-size: 10.5px;
+  color: #c4c9ce;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
   text-align: center;
   font-size: 10.5px;
   color: #5b6570;

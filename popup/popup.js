@@ -37,6 +37,13 @@ const els = {
   statFacts: document.getElementById("statFacts"),
   statConfirmed: document.getElementById("statConfirmed"),
   statFiltered: document.getElementById("statFiltered"),
+  dotExtract: document.getElementById("dotExtract"),
+  stateExtract: document.getElementById("stateExtract"),
+  dotVerify: document.getElementById("dotVerify"),
+  stateVerify: document.getElementById("stateVerify"),
+  devClaimText: document.getElementById("devClaimText"),
+  testFactcheck: document.getElementById("testFactcheck"),
+  devResult: document.getElementById("devResult"),
 };
 
 async function getState() {
@@ -182,6 +189,78 @@ chrome.storage.onChanged.addListener((changes, area) => {
     changes.verilens_video_max_seconds
   ) {
     refresh();
+  }
+});
+
+// ---- Backend API pings ----------------------------------------------------
+const API_BASE = "https://verilens-claim-extractor.vercel.app";
+const VERIFY_BASE = "https://fact-verifier.vercel.app";
+
+function setApiDot(el, stateEl, ok, text) {
+  el.className = "vl-dot-sm " + (ok ? "green" : "red");
+  stateEl.textContent = text;
+}
+
+async function pingExtract() {
+  els.dotExtract.className = "vl-dot-sm amber";
+  els.stateExtract.textContent = "pinging…";
+  try {
+    const r = await fetch(API_BASE + "/healthz", { signal: AbortSignal.timeout(5000) });
+    const j = await r.json();
+    setApiDot(els.dotExtract, els.stateExtract, j.ok, j.ok ? "up · " + (j.vlm_provider || "?") : "down");
+  } catch { setApiDot(els.dotExtract, els.stateExtract, false, "unreachable"); }
+}
+
+async function pingVerify() {
+  els.dotVerify.className = "vl-dot-sm amber";
+  els.stateVerify.textContent = "pinging…";
+  try {
+    const r = await fetch(VERIFY_BASE + "/healthz", { signal: AbortSignal.timeout(5000) });
+    const j = await r.json();
+    setApiDot(els.dotVerify, els.stateVerify, j.ok, j.ok ? "up · fc=" + j.factcheck_available : "down");
+  } catch { setApiDot(els.dotVerify, els.stateVerify, false, "unreachable"); }
+}
+
+document.getElementById("pingExtract").addEventListener("click", pingExtract);
+document.getElementById("pingVerify").addEventListener("click", pingVerify);
+
+// Auto-ping on popup open
+pingExtract();
+pingVerify();
+
+// ---- Test fact-check ------------------------------------------------------
+els.testFactcheck.addEventListener("click", async () => {
+  const text = els.devClaimText.value.trim();
+  if (!text) return;
+  els.devResult.hidden = false;
+  els.devResult.textContent = "Extracting claims…";
+  els.testFactcheck.disabled = true;
+  try {
+    const ex = await fetch(API_BASE + "/api/factcheck", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId: "dev-test", captionText: text }),
+      signal: AbortSignal.timeout(60000),
+    });
+    if (!ex.ok) { els.devResult.textContent = "Extract: HTTP " + ex.status; return; }
+    const extract = await ex.json();
+    const claims = extract.claims || [];
+    if (!claims.length) { els.devResult.textContent = "No claims extracted."; return; }
+
+    els.devResult.textContent = "Verifying " + claims.length + " claim(s)…";
+    const vfy = await fetch(VERIFY_BASE + "/api/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId: "dev-test", claims: claims }),
+      signal: AbortSignal.timeout(120000),
+    });
+    if (!vfy.ok) { els.devResult.textContent = "Verify: HTTP " + vfy.status; return; }
+    const verify = await vfy.json();
+    els.devResult.textContent = JSON.stringify(verify, null, 2);
+  } catch (e) {
+    els.devResult.textContent = "Error: " + (e.message || e);
+  } finally {
+    els.testFactcheck.disabled = false;
   }
 });
 

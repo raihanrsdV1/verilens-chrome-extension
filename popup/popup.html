@@ -122,6 +122,29 @@
         </div>
         <div class="vl-row-desc" id="tierLabel">Free</div>
 
+        <div class="vl-dev-section">
+          <div class="vl-dev-head">Backend APIs</div>
+          <div class="vl-api-status" id="apiExtract">
+            <span class="vl-dot-sm" id="dotExtract"></span>
+            <span class="vl-api-name">Claim extractor</span>
+            <span class="vl-api-state" id="stateExtract">—</span>
+            <button id="pingExtract" class="vl-ping-btn">ping</button>
+          </div>
+          <div class="vl-api-status" id="apiVerify">
+            <span class="vl-dot-sm" id="dotVerify"></span>
+            <span class="vl-api-name">Fact verifier</span>
+            <span class="vl-api-state" id="stateVerify">—</span>
+            <button id="pingVerify" class="vl-ping-btn">ping</button>
+          </div>
+        </div>
+
+        <div class="vl-dev-section">
+          <div class="vl-dev-head">Test fact-check</div>
+          <textarea id="devClaimText" class="vl-dev-input" rows="2" placeholder="Paste a claim to test...">The Eiffel Tower is 330 meters tall.</textarea>
+          <button id="testFactcheck" class="vl-dev-btn">Run fact-check</button>
+          <pre id="devResult" class="vl-dev-result" hidden></pre>
+        </div>
+
         <button id="resetStats" class="vl-dev-link">Reset session stats</button>
       </details>
     </div>
