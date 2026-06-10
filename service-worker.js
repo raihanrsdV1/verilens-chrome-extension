@@ -228,10 +228,10 @@ async function handleFactcheck(payload) {
       postId: payload.postId,
       cached: false,
       error: true,
-      message: `Fact-check backend unavailable: ${e.message}`,
+      errorMessage: e.message || "Backend unreachable",
       claims: [],
       overall: "unverifiable",
-      explanation: "The fact-check backend could not be reached. Try again later.",
+      explanation: "The fact-check backend could not be reached. The server may be starting up (cold start) or experiencing issues. Try again in a moment.",
     };
   }
 }
