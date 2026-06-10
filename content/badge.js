@@ -47,6 +47,18 @@
     section.append(head);
   }
 
+  // What did this scan actually look at? Used to make the section title
+  // explicit about whether the result reflects an image, a video, or both.
+  function modalityLabel(result) {
+    const media = (result && result.media) || {};
+    const img = !!(media.image && media.image.available !== false);
+    const vid = !!(media.video && media.video.available === true);
+    if (img && vid) return "Image + Video";
+    if (vid) return "Video";
+    if (img) return "Image";
+    return "";
+  }
+
   // ---- Deepfake ------------------------------------------------------------
   const BAND_LABEL = {
     green: "Likely real",
@@ -63,7 +75,8 @@
       return;
     }
 
-    sectionHead(section, "Deepfake check", result.cached);
+    const modality = modalityLabel(result);
+    sectionHead(section, "Deepfake check" + (modality ? " · " + modality : ""), result.cached);
 
     // ── Trust level 1 & 2: CONFIRMED AI via verifiable provenance ──
     // C2PA (local) or SynthID (backend). This is evidence, not a model guess —
@@ -195,7 +208,7 @@
       return;
     }
 
-    sectionHead(section, "Fact-check", result.cached);
+    sectionHead(section, "Fact-check · Text", result.cached);
 
     const band = OVERALL_BAND[result.overall] || "grey";
     const overallRow = el("div", "verilens-verdict-row " + band);
@@ -217,7 +230,8 @@
   function renderUpgrade(mount, info, handlers) {
     const kind = info.kind === "deepfake" ? "deepfake" : "factcheck";
     const section = ensureSection(mount, kind);
-    sectionHead(section, kind === "deepfake" ? "Deepfake check" : "Fact-check", false);
+    // Deepfake gating only applies to video (image deepfake checks are free).
+    sectionHead(section, kind === "deepfake" ? "Deepfake check · Video" : "Fact-check · Text", false);
 
     const card = el("div", "verilens-upgrade");
     card.append(el("div", "verilens-upgrade-title", "🔒 Premium feature"));

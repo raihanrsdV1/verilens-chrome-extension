@@ -41,6 +41,8 @@ build/
 .env
 .env.*
 !.env.example
+lib/config.local.js
+!lib/config.local.example.js
 
 # ---- Local Claude / agent artifacts ----
 .claude/

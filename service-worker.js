@@ -13,13 +13,16 @@
 // can be shared verbatim with the content scripts. Paths are relative to the
 // extension root.
 importScripts(
+  "lib/config.local.js",
   "lib/tiers.js",
   "lib/hash.js",
   "lib/cache.js",
   "lib/config.js",
   "lib/provenanceLocalMock.js",
   "lib/provenanceLocal.js",
-  "lib/mockBackend.js"
+  "lib/mockBackend.js",
+  "lib/realBackend.js",
+  "lib/realTextBackend.js"
 );
 
 const Cache = self.VerilensCache;
@@ -27,6 +30,8 @@ const Mock = self.VerilensMock;
 const Tiers = self.VerilensTiers;
 const Provenance = self.VerilensProvenance;
 const Config = self.VerilensConfig;
+const RealBackend = self.VerilensRealBackend;
+const RealTextBackend = self.VerilensRealTextBackend;
 
 const TIER_KEY = "verilens_tier";
 
@@ -96,6 +101,48 @@ async function handleDeepfake(payload) {
     return confirmedResult;
   }
 
+  // 2.5) REAL video deepfake via the hosted VideoVeritas model. Only fires when the
+  //      post has video, the user is premium-entitled, and a backend URL is set.
+  //      Any failure (no bytes, unreachable, bad response) falls through to the mock
+  //      so demos keep working. Image-only posts never hit this path.
+  if (payload.hasVideo && Tiers.isAllowed("deepfakeVideo", tier)) {
+    const backendUrl = await RealBackend.getBackendUrl();
+    if (backendUrl) {
+      log("deepfake = calling REAL VideoVeritas backend:", backendUrl);
+      const v = await RealBackend.detectVideo(payload);
+      if (v && !v.error) {
+        const result = buildVideoResult(payload, v);
+        result.cached = false;
+        await Cache.setVerdict(payload.postId, result, "deepfake");
+        await bumpStat("deepfakeScans");
+        log("deepfake → REAL video result:", result);
+        return result;
+      }
+      log("deepfake = real backend unavailable (" + (v && v.error) + ") — falling back to mock");
+    }
+  }
+
+  // 2.7) REAL image deepfake via the hosted FSD model. Fires when the post has an
+  //      image and an image backend URL is set. Image detection is FREE (no tier
+  //      gate). Runs AFTER the video block so image+video posts still prefer the
+  //      richer video model. Any failure falls through to the mock.
+  if (hasImage) {
+    const imageBackendUrl = await RealBackend.getImageBackendUrl();
+    if (imageBackendUrl) {
+      log("deepfake = calling REAL FSD image backend:", imageBackendUrl);
+      const im = await RealBackend.detectImage(payload);
+      if (im && !im.error) {
+        const result = buildImageResult(payload, im);
+        result.cached = false;
+        await Cache.setVerdict(payload.postId, result, "deepfake");
+        await bumpStat("deepfakeScans");
+        log("deepfake → REAL image result:", result);
+        return result;
+      }
+      log("deepfake = FSD image backend unavailable (" + (im && im.error) + ") — falling back to mock");
+    }
+  }
+
   // 3) STAGE B — backend (mock). Simulate first-scan latency so the UI gets to
   //    show loading states. (Real backend runs SynthID + the heavy pipeline.)
   log("deepfake = Stage A absent; calling backend (tier:", tier + ")");
@@ -130,6 +177,55 @@ function buildC2PAConfirmed(payload, prov) {
     },
     explanation:
       "This image carries signed C2PA Content Credentials declaring it was generated or edited with AI. That's a verifiable provenance signal — no model guess needed.",
+  };
+}
+
+// Shape a real VideoVeritas verdict into the deepfake contract. The model only
+// judges the VIDEO modality; image/audio are reported as not-analyzed here.
+function buildVideoResult(payload, v) {
+  const hasImage = (payload.imageUrls || []).length > 0;
+  return {
+    postId: payload.postId,
+    band: v.band,
+    confirmed: null,
+    provenance: { c2pa: "absent", synthid: "not_checked", source: null },
+    media: {
+      image: hasImage
+        ? { available: false, reason: "not_checked" }
+        : { available: false, reason: "no_image" },
+      video: { available: true, aiGenerated: v.prob, verdict: v.verdict },
+      audio: payload.hasAudio
+        ? { available: false, reason: "not_checked" }
+        : { available: false, reason: "no_audio" },
+    },
+    explanation:
+      (v.reason ? v.reason + " " : "") +
+      "Verdict from the VideoVeritas video model analyzing sampled frames.",
+    source: "videoveritas",
+  };
+}
+
+// Shape a real FSD verdict into the deepfake contract. FSD judges only the IMAGE
+// modality (binary real-vs-AI); video/audio are reported as not-analyzed here.
+function buildImageResult(payload, im) {
+  return {
+    postId: payload.postId,
+    band: im.band,
+    confirmed: null,
+    provenance: { c2pa: "absent", synthid: "not_checked", source: null },
+    media: {
+      image: { available: true, aiGenerated: im.prob, verdict: im.verdict },
+      video: payload.hasVideo
+        ? { available: false, reason: "not_checked" }
+        : { available: false, reason: "no_video" },
+      audio: payload.hasAudio
+        ? { available: false, reason: "not_checked" }
+        : { available: false, reason: "no_audio" },
+    },
+    explanation:
+      (im.reason ? im.reason + " " : "") +
+      "Verdict from the FSD (Forensic Self-Descriptions) image forensics model.",
+    source: "fsd",
   };
 }
 
@@ -314,7 +410,22 @@ async function handleDetectText(payload) {
     return { ...cachedVerdict, cached: true };
   }
 
-  log("detectText = cache miss; calling mock backend");
+  // Try the real Fast-DetectGPT backend first. Any failure falls through to mock.
+  const textBackendUrl = await RealTextBackend.getBackendUrl();
+  if (textBackendUrl) {
+    log("detectText = calling REAL Fast-DetectGPT backend:", textBackendUrl);
+    const v = await RealTextBackend.detectText({ text: payload.text || payload.selectedText || "" });
+    if (v && !v.error) {
+      const result = { textHash: payload.textHash, cached: false, ...v };
+      await Cache.setVerdict(payload.textHash, result, "detectText");
+      await bumpStat("detectTextScans");
+      log("detectText → REAL result:", result);
+      return result;
+    }
+    log("detectText = real backend unavailable (" + (v && v.error) + ") — falling back to mock");
+  }
+
+  log("detectText = calling mock backend");
   await delay(400 + Math.floor(Math.random() * 500)); // 400–900ms
 
   const result = Mock.detectText(payload);
@@ -376,10 +487,14 @@ chrome.runtime.onInstalled.addListener(async () => {
     TIER_KEY,
     "verilens_autofilter_enabled",
     "verilens_filter_categories",
+    "verilens_hover_detect_enabled",
+    "verilens_video_max_seconds",
   ]);
   const seed = {};
   if (o[TIER_KEY] === undefined) seed[TIER_KEY] = "free";
   if (o.verilens_autofilter_enabled === undefined) seed.verilens_autofilter_enabled = false;
+  if (o.verilens_hover_detect_enabled === undefined) seed.verilens_hover_detect_enabled = false;
+  if (o.verilens_video_max_seconds === undefined) seed.verilens_video_max_seconds = 20;
   if (o.verilens_filter_categories === undefined) {
     seed.verilens_filter_categories = {
       political: true,

@@ -15,7 +15,12 @@
     "https://facebook.com/*",
     "https://*.fbcdn.net/*",
     "https://verilens-claim-extractor.vercel.app/*",
-    "https://fact-verifier.vercel.app/*"
+    "https://fact-verifier.vercel.app/*",
+    "https://video.twimg.com/*",
+    "https://*.ngrok-free.app/*",
+    "https://*.ngrok.app/*",
+    "https://*.ngrok-free.dev/*",
+    "https://*.ngrok.io/*"
   ],
   "background": {
     "service_worker": "service-worker.js"
@@ -29,11 +34,13 @@
         "https://www.facebook.com/*"
       ],
       "js": [
+        "lib/config.local.js",
         "lib/hash.js",
         "lib/tiers.js",
         "content/adapters/twitter.js",
         "content/adapters/instagram.js",
         "content/adapters/facebook.js",
+        "content/videoCapture.js",
         "content/badge.js",
         "content/actions.js",
         "content/filter.js",

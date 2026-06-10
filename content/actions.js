@@ -39,6 +39,14 @@
       .catch(() => "free");
   }
 
+  // Only worth the cost of capturing/recording video frames if a real backend
+  // is actually configured (lib/config.local.js) — otherwise the mock will be
+  // used and doesn't need video bytes at all.
+  function backendConfigured() {
+    const url = g.VerilensConfig && g.VerilensConfig.videoBackendUrl;
+    return Promise.resolve(!!(url && String(url).trim()));
+  }
+
   // Create (once) the shadow host for a post and return its inner mount div.
   function ensureMount(postEl, anchor) {
     if (postEl.__verilensMount) return postEl.__verilensMount;
@@ -108,12 +116,23 @@
     };
   }
 
-  async function runDeepfake(data, mount, btn, refreshControls) {
-    log("→ SCAN_DEEPFAKE request payload:", data);
+  async function runDeepfake(data, mount, btn, refreshControls, postEl) {
     let res;
     await withLoading(btn, "Checking…", async () => {
+      // For videos, get pixels to the real VideoVeritas backend + pass the user's
+      // configured "video analysis length". For MSE blob: videos (IG/X/FB) this
+      // grabs real frames off the live <video> via canvas, so we need the element.
+      // Only worth doing when a real backend is actually configured (the mock
+      // doesn't need video bytes).
+      let payload = data;
+      if (data.hasVideo && g.VerilensVideoCapture && (await backendConfigured())) {
+        const videoEl = postEl && postEl.querySelector && postEl.querySelector("video");
+        const extra = await g.VerilensVideoCapture.prepareThorough(data.videoUrl, videoEl);
+        payload = { ...data, ...extra };
+      }
+      log("→ SCAN_DEEPFAKE request payload:", payload);
       try {
-        res = await chrome.runtime.sendMessage({ type: "SCAN_DEEPFAKE", payload: data });
+        res = await chrome.runtime.sendMessage({ type: "SCAN_DEEPFAKE", payload });
       } catch (e) {
         res = { error: String(e) };
       }
@@ -125,7 +144,7 @@
       g.VerilensBadge.renderUpgrade(
         mount,
         { kind: "deepfake", message: res.message },
-        makeUpgradeHandlers(refreshControls, () => runDeepfake(data, mount, btn, refreshControls))
+        makeUpgradeHandlers(refreshControls, () => runDeepfake(data, mount, btn, refreshControls, postEl))
       );
       return;
     }
@@ -211,16 +230,16 @@
     const deepfakeFeature = hasImage ? "deepfakeImage" : "deepfakeVideo";
 
     if (showDeepfake) {
-      checkBtn = el("button", "verilens-btn", "Check media");
+      checkBtn = el("button", "verilens-btn verilens-btn-primary", "🔍 Check media");
       checkBtn.title = hasImage
         ? "Run AI deepfake detection on this image"
         : "Run AI deepfake detection on this video (Premium)";
-      checkBtn.addEventListener("click", () => runDeepfake(data, mount, checkBtn, refreshControls));
+      checkBtn.addEventListener("click", () => runDeepfake(data, mount, checkBtn, refreshControls, postEl));
       bar.append(checkBtn);
     }
 
     if (showFactcheck) {
-      factBtn = el("button", "verilens-btn", "Fact-check");
+      factBtn = el("button", "verilens-btn verilens-btn-secondary", "📰 Fact-check");
       factBtn.title = "Verify the claims in this post against trusted sources";
       factBtn.addEventListener("click", () => runFactcheck(data, mount, factBtn, refreshControls, postEl));
       bar.append(factBtn);
@@ -232,12 +251,12 @@
       const tier = await getTier();
       if (checkBtn) {
         const locked = !Tiers.isAllowed(deepfakeFeature, tier);
-        checkBtn.textContent = locked ? "🔒 Check media" : "Check media";
+        checkBtn.textContent = locked ? "🔒 Check media" : "🔍 Check media";
         checkBtn.classList.toggle("locked", locked);
       }
       if (factBtn) {
         const locked = !Tiers.isAllowed("factCheck", tier);
-        factBtn.textContent = locked ? "🔒 Fact-check" : "Fact-check";
+        factBtn.textContent = locked ? "🔒 Fact-check" : "📰 Fact-check";
         factBtn.classList.toggle("locked", locked);
       }
     }

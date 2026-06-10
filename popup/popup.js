@@ -6,6 +6,9 @@
 //   verilens_tier                 "free" | "premium"
 //   verilens_autofilter_enabled   boolean (master switch)
 //   verilens_filter_categories    { political, ai_meme, ai_generated, misinformation }
+//
+// AI backend URLs (video/image) are NOT stored here and are not shown in this
+// popup at all — they live in lib/config.local.js (gitignored).
 
 const DEFAULT_CATEGORIES = {
   political: true,
@@ -16,12 +19,16 @@ const DEFAULT_CATEGORIES = {
 
 const els = {
   tierBadge: document.getElementById("tierBadge"),
+  tabs: Array.from(document.querySelectorAll(".vl-tab")),
+  panels: Array.from(document.querySelectorAll(".vl-panel")),
   autofilterToggle: document.getElementById("autofilterToggle"),
   premiumNote: document.getElementById("premiumNote"),
   categories: document.getElementById("categories"),
   catInputs: Array.from(document.querySelectorAll("[data-cat]")),
   tierToggle: document.getElementById("tierToggle"),
   tierLabel: document.getElementById("tierLabel"),
+  hoverToggle: document.getElementById("hoverToggle"),
+  videoMaxSeconds: document.getElementById("videoMaxSeconds"),
   upgradeCard: document.getElementById("upgradeCard"),
   premiumCard: document.getElementById("premiumCard"),
   upgradeBtn: document.getElementById("upgradeBtn"),
@@ -38,12 +45,16 @@ async function getState() {
     "verilens_autofilter_enabled",
     "verilens_filter_categories",
     "verilens_stats",
+    "verilens_hover_detect_enabled",
+    "verilens_video_max_seconds",
   ]);
   return {
     tier: o.verilens_tier || "free",
     enabled: !!o.verilens_autofilter_enabled,
     categories: o.verilens_filter_categories || { ...DEFAULT_CATEGORIES },
     stats: o.verilens_stats || {},
+    hoverEnabled: o.verilens_hover_detect_enabled === true,
+    videoMaxSeconds: typeof o.verilens_video_max_seconds === "number" ? o.verilens_video_max_seconds : 20,
   };
 }
 
@@ -79,6 +90,10 @@ function render(state) {
   // Upgrade screen vs. premium-active status
   els.upgradeCard.hidden = isPremium;
   els.premiumCard.hidden = !isPremium;
+
+  // Detection settings
+  els.hoverToggle.checked = state.hoverEnabled;
+  els.videoMaxSeconds.value = String(state.videoMaxSeconds);
 }
 
 // Timing probe: how long from this script starting to the first full render.
@@ -94,6 +109,20 @@ async function refresh() {
     console.log("[Verilens popup] ready in", Math.round(performance.now() - _t0), "ms");
   }
 }
+
+// ---- Tabs -------------------------------------------------------------------
+els.tabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const target = tab.dataset.tab;
+    els.tabs.forEach((t) => {
+      t.classList.toggle("active", t === tab);
+      t.setAttribute("aria-selected", t === tab ? "true" : "false");
+    });
+    els.panels.forEach((p) => {
+      p.hidden = p.dataset.panel !== target;
+    });
+  });
+});
 
 // ---- wiring ----------------------------------------------------------------
 els.tierToggle.addEventListener("change", async () => {
@@ -128,6 +157,17 @@ els.resetStats.addEventListener("click", async () => {
   refresh();
 });
 
+// ---- Detection settings ----------------------------------------------------
+els.hoverToggle.addEventListener("change", async () => {
+  await chrome.storage.local.set({ verilens_hover_detect_enabled: els.hoverToggle.checked });
+  refresh();
+});
+
+els.videoMaxSeconds.addEventListener("change", async () => {
+  await chrome.storage.local.set({ verilens_video_max_seconds: Number(els.videoMaxSeconds.value) });
+  refresh();
+});
+
 // Keep the popup in sync if OUR settings change elsewhere (e.g. the in-page dev
 // "Enable premium" link). Ignore the cache key — it changes constantly during
 // classify and would cause needless re-renders.
@@ -137,7 +177,9 @@ chrome.storage.onChanged.addListener((changes, area) => {
     changes.verilens_tier ||
     changes.verilens_autofilter_enabled ||
     changes.verilens_filter_categories ||
-    changes.verilens_stats
+    changes.verilens_stats ||
+    changes.verilens_hover_detect_enabled ||
+    changes.verilens_video_max_seconds
   ) {
     refresh();
   }
