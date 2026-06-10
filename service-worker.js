@@ -13,22 +13,26 @@
 // can be shared verbatim with the content scripts. Paths are relative to the
 // extension root.
 importScripts(
+  "lib/config.js",          // must be first — other modules may read VerilensConfig
   "lib/tiers.js",
   "lib/hash.js",
   "lib/cache.js",
   "lib/provenanceLocalMock.js",
   "lib/provenanceLocal.js",
   "lib/mockBackend.js",
-  "lib/realBackend.js"
+  "lib/realBackend.js",
+  "lib/realTextBackend.js"
 );
 
+const Config = self.VerilensConfig;
 const Cache = self.VerilensCache;
 const Mock = self.VerilensMock;
 const Tiers = self.VerilensTiers;
 const Provenance = self.VerilensProvenance;
 const RealBackend = self.VerilensRealBackend;
+const RealTextBackend = self.VerilensRealTextBackend;
 
-const TIER_KEY = "verilens_tier";
+const TIER_KEY = Config.STORAGE_KEYS.TIER;
 
 // Flip to false to silence dev logs. When true, the worker prints what it
 // RECEIVED and what it RETURNED to the SERVICE WORKER console (chrome://extensions
@@ -51,10 +55,11 @@ function delay(ms) {
 // Session stats shown in the popup. Small object, incremented on real work only
 // (never on cache hits, to avoid inflating counts on re-scans).
 async function bumpStat(key, n = 1) {
-  const o = await chrome.storage.local.get("verilens_stats");
-  const s = o.verilens_stats || {};
+  const STATS_KEY = Config.STORAGE_KEYS.STATS;
+  const o = await chrome.storage.local.get(STATS_KEY);
+  const s = o[STATS_KEY] || {};
   s[key] = (s[key] || 0) + n;
-  await chrome.storage.local.set({ verilens_stats: s });
+  await chrome.storage.local.set({ [STATS_KEY]: s });
 }
 
 // ---- Deepfake scan ---------------------------------------------------------
@@ -293,7 +298,22 @@ async function handleDetectText(payload) {
     return { ...cachedVerdict, cached: true };
   }
 
-  log("detectText = cache miss; calling mock backend");
+  // Try the real Fast-DetectGPT backend first. Any failure falls through to mock.
+  const textBackendUrl = await RealTextBackend.getBackendUrl();
+  if (textBackendUrl) {
+    log("detectText = calling REAL Fast-DetectGPT backend:", textBackendUrl);
+    const v = await RealTextBackend.detectText({ text: payload.text || payload.selectedText || "" });
+    if (v && !v.error) {
+      const result = { textHash: payload.textHash, cached: false, ...v };
+      await Cache.setVerdict(payload.textHash, result, "detectText");
+      await bumpStat("detectTextScans");
+      log("detectText → REAL result:", result);
+      return result;
+    }
+    log("detectText = real backend unavailable (" + (v && v.error) + ") — falling back to mock");
+  }
+
+  log("detectText = calling mock backend");
   await delay(400 + Math.floor(Math.random() * 500)); // 400–900ms
 
   const result = Mock.detectText(payload);
@@ -344,6 +364,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         .catch((e) => sendResponse({ ok: false, error: String(e) }));
       return true;
 
+    // Popup "Test connection" for the Fast-DetectGPT text backend (ngrok URL).
+    case "PING_TEXT_BACKEND":
+      RealTextBackend.ping(msg.url)
+        .then(sendResponse)
+        .catch((e) => sendResponse({ ok: false, error: String(e) }));
+      return true;
+
     // Dev helper so we can flip tiers from the console before the popup exists.
     case "SET_TIER":
       chrome.storage.local
@@ -358,20 +385,24 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 // Seed sane defaults on install (without clobbering anything already set).
 chrome.runtime.onInstalled.addListener(async () => {
+  const SK = Config.STORAGE_KEYS;
+  const DEF = Config.DEFAULTS;
   const o = await chrome.storage.local.get([
-    TIER_KEY,
-    "verilens_autofilter_enabled",
-    "verilens_filter_categories",
-    "verilens_backend_url",
-    "verilens_hover_detect_enabled",
-    "verilens_video_max_seconds",
+    SK.TIER,
+    SK.AUTOFILTER_ENABLED,
+    SK.FILTER_CATEGORIES,
+    SK.BACKEND_URL,
+    SK.TEXT_BACKEND_URL,
+    SK.HOVER_DETECT_ENABLED,
+    SK.VIDEO_MAX_SECONDS,
   ]);
   const seed = {};
-  if (o[TIER_KEY] === undefined) seed[TIER_KEY] = "free";
-  if (o.verilens_autofilter_enabled === undefined) seed.verilens_autofilter_enabled = false;
-  if (o.verilens_backend_url === undefined) seed.verilens_backend_url = "";
-  if (o.verilens_hover_detect_enabled === undefined) seed.verilens_hover_detect_enabled = true;
-  if (o.verilens_video_max_seconds === undefined) seed.verilens_video_max_seconds = 20;
+  if (o[SK.TIER] === undefined)               seed[SK.TIER]               = DEF.TIER;
+  if (o[SK.AUTOFILTER_ENABLED] === undefined)  seed[SK.AUTOFILTER_ENABLED] = DEF.AUTOFILTER_ENABLED;
+  if (o[SK.BACKEND_URL] === undefined)         seed[SK.BACKEND_URL]        = Config.ENDPOINTS.VIDEO_BACKEND || DEF.BACKEND_URL;
+  if (o[SK.TEXT_BACKEND_URL] === undefined)    seed[SK.TEXT_BACKEND_URL]   = Config.ENDPOINTS.TEXT_BACKEND  || DEF.TEXT_BACKEND_URL;
+  if (o[SK.HOVER_DETECT_ENABLED] === undefined) seed[SK.HOVER_DETECT_ENABLED] = DEF.HOVER_DETECT;
+  if (o[SK.VIDEO_MAX_SECONDS] === undefined)   seed[SK.VIDEO_MAX_SECONDS]  = DEF.VIDEO_MAX_SECONDS;
   if (o.verilens_filter_categories === undefined) {
     seed.verilens_filter_categories = {
       political: true,

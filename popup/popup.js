@@ -26,6 +26,10 @@ const els = {
   backendTest: document.getElementById("backendTest"),
   backendStatus: document.getElementById("backendStatus"),
   backendPremiumNote: document.getElementById("backendPremiumNote"),
+  textBackendUrl: document.getElementById("textBackendUrl"),
+  textBackendTest: document.getElementById("textBackendTest"),
+  textBackendStatus: document.getElementById("textBackendStatus"),
+  textBackendPremiumNote: document.getElementById("textBackendPremiumNote"),
   hoverToggle: document.getElementById("hoverToggle"),
   videoMaxSeconds: document.getElementById("videoMaxSeconds"),
   upgradeCard: document.getElementById("upgradeCard"),
@@ -45,6 +49,7 @@ async function getState() {
     "verilens_filter_categories",
     "verilens_stats",
     "verilens_backend_url",
+    "verilens_text_backend_url",
     "verilens_hover_detect_enabled",
     "verilens_video_max_seconds",
   ]);
@@ -54,6 +59,7 @@ async function getState() {
     categories: o.verilens_filter_categories || { ...DEFAULT_CATEGORIES },
     stats: o.verilens_stats || {},
     backendUrl: o.verilens_backend_url || "",
+    textBackendUrl: o.verilens_text_backend_url || "",
     hoverEnabled: o.verilens_hover_detect_enabled !== false,
     videoMaxSeconds: typeof o.verilens_video_max_seconds === "number" ? o.verilens_video_max_seconds : 20,
   };
@@ -97,6 +103,11 @@ function render(state) {
     els.backendUrl.value = state.backendUrl;
   }
   els.backendPremiumNote.hidden = isPremium;
+
+  if (document.activeElement !== els.textBackendUrl) {
+    els.textBackendUrl.value = state.textBackendUrl;
+  }
+  els.textBackendPremiumNote.hidden = isPremium;
 
   // Detection settings
   els.hoverToggle.checked = state.hoverEnabled;
@@ -182,6 +193,40 @@ els.backendTest.addEventListener("click", async () => {
     setBackendStatus("✗ " + String(e), "err");
   } finally {
     els.backendTest.disabled = false;
+  }
+});
+
+// ---- AI Text Detection backend -------------------------------------------
+function setTextBackendStatus(text, cls) {
+  els.textBackendStatus.textContent = text;
+  els.textBackendStatus.className = "vl-backend-status" + (cls ? " " + cls : "");
+}
+
+let _saveTextTimer = null;
+els.textBackendUrl.addEventListener("input", () => {
+  clearTimeout(_saveTextTimer);
+  _saveTextTimer = setTimeout(async () => {
+    await chrome.storage.local.set({ verilens_text_backend_url: els.textBackendUrl.value.trim() });
+  }, 300);
+});
+
+els.textBackendTest.addEventListener("click", async () => {
+  const url = els.textBackendUrl.value.trim();
+  await chrome.storage.local.set({ verilens_text_backend_url: url });
+  if (!url) {
+    setTextBackendStatus("Enter a URL first", "err");
+    return;
+  }
+  setTextBackendStatus("Testing…", "");
+  els.textBackendTest.disabled = true;
+  try {
+    const res = await chrome.runtime.sendMessage({ type: "PING_TEXT_BACKEND", url });
+    if (res && res.ok) setTextBackendStatus("✓ Connected · " + shortModel(res.model), "ok");
+    else setTextBackendStatus("✗ " + ((res && res.error) || "Failed"), "err");
+  } catch (e) {
+    setTextBackendStatus("✗ " + String(e), "err");
+  } finally {
+    els.textBackendTest.disabled = false;
   }
 });
 

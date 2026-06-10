@@ -87,6 +87,24 @@
       </p>
     </section>
 
+    <!-- AI Text Detection backend (Kaggle Fast-DetectGPT via ngrok) -->
+    <section class="vl-card">
+      <div class="vl-row-title">AI Text Detection</div>
+      <div class="vl-row-desc">
+        Connect the Kaggle-hosted <strong>Fast-DetectGPT</strong> model (exposed via ngrok)
+        to detect AI-written text on highlighted selections. Paste the ngrok URL from the notebook.
+      </div>
+      <input id="textBackendUrl" class="vl-input" type="text" spellcheck="false"
+             placeholder="https://xxxxx.ngrok-free.app" />
+      <div class="vl-backend-row">
+        <button id="textBackendTest" class="vl-btn-sm">Test connection</button>
+        <span id="textBackendStatus" class="vl-backend-status">Not connected</span>
+      </div>
+      <p class="vl-note" id="textBackendPremiumNote" hidden>
+        🔒 Text detection runs on the <strong>Premium</strong> plan.
+      </p>
+    </section>
+
     <!-- Session stats -->
     <section class="vl-card">
       <div class="vl-cat-head">This session</div>
