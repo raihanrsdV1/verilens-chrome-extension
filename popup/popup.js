@@ -44,8 +44,8 @@ const els = {
   devClaimText: document.getElementById("devClaimText"),
   testFactcheck: document.getElementById("testFactcheck"),
   devResult: document.getElementById("devResult"),
+  historyList: document.getElementById("historyList"),
 };
-
 async function getState() {
   const o = await chrome.storage.local.get([
     "verilens_tier",
@@ -54,6 +54,7 @@ async function getState() {
     "verilens_stats",
     "verilens_hover_detect_enabled",
     "verilens_video_max_seconds",
+    "verilens_history",
   ]);
   return {
     tier: o.verilens_tier || "free",
@@ -62,6 +63,7 @@ async function getState() {
     stats: o.verilens_stats || {},
     hoverEnabled: o.verilens_hover_detect_enabled === true,
     videoMaxSeconds: typeof o.verilens_video_max_seconds === "number" ? o.verilens_video_max_seconds : 20,
+    history: o.verilens_history || [],
   };
 }
 
@@ -101,6 +103,44 @@ function render(state) {
   // Detection settings
   els.hoverToggle.checked = state.hoverEnabled;
   els.videoMaxSeconds.value = String(state.videoMaxSeconds);
+
+  // History
+  renderHistory(state.history);
+}
+
+var CLAIM_BAND = { corroborated: "green", contradicted: "red", unverifiable: "grey", developing: "amber" };
+var CLAIM_LABEL = { corroborated: "Corroborated", contradicted: "Contradicted", unverifiable: "Unverifiable", developing: "Developing" };
+
+function renderHistory(history) {
+  if (!els.historyList) return;
+  var list = history || [];
+  if (!list.length) {
+    els.historyList.innerHTML = '<div class="vl-history-empty">No fact-checks yet. Click "Fact-check" on any post.</div>';
+    return;
+  }
+  var html = "";
+  for (var i = 0; i < list.length; i++) {
+    var h = list[i];
+    var claims = h.claims || [];
+    var claimHtml = claims.map(function (c) {
+      var band = CLAIM_BAND[c.verdict] || "grey";
+      return '<span class="vl-history-claim"><span class="vl-dot-sm ' + band + '"></span>' +
+        (c.claim || "").slice(0, 80) + '</span>';
+    }).join("");
+    var icons = [];
+    if (h.hasImage) icons.push("🖼");
+    if (h.hasVideo) icons.push("🎞");
+    var time = new Date(h.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    html += '<div class="vl-history-item">' +
+      '<div class="vl-history-meta">' + time + (icons.length ? " · " + icons.join("") : "") +
+        (h.overall ? ' · <span class="vl-history-overall ' + (CLAIM_BAND[h.overall] || "grey") + '">' + h.overall.replace("_", " ") + '</span>' : "") +
+      '</div>' +
+      (h.caption ? '<div class="vl-history-caption">' + h.caption.slice(0, 120) + '</div>' : "") +
+      (claimHtml ? '<div class="vl-history-claims">' + claimHtml + '</div>' : "") +
+      (h.error ? '<div class="vl-history-error">⚠ Backend unreachable</div>' : "") +
+    '</div>';
+  }
+  els.historyList.innerHTML = html;
 }
 
 // Timing probe: how long from this script starting to the first full render.
@@ -161,6 +201,11 @@ els.upgradeBtn.addEventListener("click", () => {
 
 els.resetStats.addEventListener("click", async () => {
   await chrome.storage.local.set({ verilens_stats: {} });
+  refresh();
+});
+
+document.getElementById("clearHistory").addEventListener("click", async () => {
+  await chrome.storage.local.set({ verilens_history: [] });
   refresh();
 });
 

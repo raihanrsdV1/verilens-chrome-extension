@@ -17,8 +17,9 @@
     </header>
 
     <nav class="vl-tabs" role="tablist">
-      <button class="vl-tab active" data-tab="settings" type="button" role="tab" aria-selected="true">⚙ Settings</button>
-      <button class="vl-tab" data-tab="help" type="button" role="tab" aria-selected="false">❓ Help</button>
+      <button class="vl-tab active" data-tab="settings" type="button" role="tab" aria-selected="true">Settings</button>
+      <button class="vl-tab" data-tab="history" type="button" role="tab" aria-selected="false">History</button>
+      <button class="vl-tab" data-tab="help" type="button" role="tab" aria-selected="false">Help</button>
     </nav>
 
     <!-- ============================== SETTINGS ============================== -->
@@ -147,6 +148,14 @@
 
         <button id="resetStats" class="vl-dev-link">Reset session stats</button>
       </details>
+    </div>
+
+    <!-- =============================== HISTORY =============================== -->
+    <div class="vl-panel" data-panel="history" hidden>
+      <div class="vl-history-list" id="historyList">
+        <div class="vl-history-empty">No fact-checks yet. Click "Fact-check" on any post.</div>
+      </div>
+      <button id="clearHistory" class="vl-dev-link" style="margin:8px 12px">Clear history</button>
     </div>
 
     <!-- ================================ HELP ================================ -->

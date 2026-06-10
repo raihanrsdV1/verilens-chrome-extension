@@ -182,6 +182,12 @@
   color: #e74c3c;
 }
 
+.verilens-detail {
+  font-size: 11px;
+  color: #8b98a5;
+  margin-top: 4px;
+}
+
 /* Grey band (used by fact-check "unverifiable") */
 .verilens-verdict-row.grey .verilens-dot { background: #8b98a5; }
 .verilens-verdict-row.grey .verilens-verdict-label { color: #aab4bd; }

@@ -204,7 +204,10 @@
 
     if (result && result.error) {
       sectionHead(section, "Fact-check", false);
-      section.append(el("div", "verilens-error", "Couldn't fact-check this post. Try again."));
+      section.append(el("div", "verilens-error", result.explanation || result.errorMessage || "Backend unreachable."));
+      if (result.errorStep) {
+        section.append(el("div", "verilens-detail", "Failed at: " + result.errorStep));
+      }
       return;
     }
 

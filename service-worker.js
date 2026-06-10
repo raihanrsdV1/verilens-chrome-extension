@@ -62,6 +62,25 @@ async function bumpStat(key, n = 1) {
   await chrome.storage.local.set({ verilens_stats: s });
 }
 
+// Fact-check history log — keeps last 50 entries for the popup.
+async function logFactcheckHistory(payload, result) {
+  const o = await chrome.storage.local.get("verilens_history");
+  const history = o.verilens_history || [];
+  history.unshift({
+    postId: payload.postId || "",
+    ts: Date.now(),
+    caption: (payload.captionText || "").slice(0, 200),
+    hasImage: (payload.imageUrls || []).length > 0,
+    hasVideo: !!payload.hasVideo,
+    claims: (result.claims || []).slice(0, 5).map(function (c) { return { claim: (c.claim || "").slice(0, 140), verdict: c.verdict, confidence: c.confidence }; }),
+    overall: result.overall || "unverifiable",
+    explanation: (result.explanation || "").slice(0, 200),
+    error: !!result.error,
+  });
+  if (history.length > 50) history.length = 50;
+  await chrome.storage.local.set({ verilens_history: history });
+}
+
 // ---- Deepfake scan ---------------------------------------------------------
 async function handleDeepfake(payload) {
   log("deepfake ← received payload:", payload);
@@ -299,7 +318,6 @@ async function handleFactcheck(payload) {
 
         if (verifyResponse.ok) {
           const verifyResult = await verifyResponse.json();
-          // Merge verification verdicts back into the extraction result
           extractResult.claims = verifyResult.claims || claims;
           extractResult.overall = verifyResult.overall || extractResult.overall;
           extractResult.explanation = verifyResult.explanation || extractResult.explanation;
@@ -314,6 +332,7 @@ async function handleFactcheck(payload) {
 
     extractResult.cached = false;
 
+    await logFactcheckHistory(payload, extractResult);
     await Cache.setVerdict(payload.postId, extractResult, "factcheck");
     await bumpStat("factCheckScans");
     log("factcheck → returning result:", extractResult);
@@ -324,10 +343,11 @@ async function handleFactcheck(payload) {
       postId: payload.postId,
       cached: false,
       error: true,
+      errorStep: "claim-extractor",
       errorMessage: e.message || "Backend unreachable",
       claims: [],
       overall: "unverifiable",
-      explanation: "The fact-check backend could not be reached. The server may be starting up (cold start) or experiencing issues. Try again in a moment.",
+      explanation: "Claim extraction failed — the server may be starting up (cold start). Try again in a few seconds.",
     };
   }
 }

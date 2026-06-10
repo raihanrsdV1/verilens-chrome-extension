@@ -378,3 +378,51 @@ details[open] .vl-dev-summary::before { content: "▾ "; }
   gap: 4px;
 }
 .vl-plan-list li { font-size: 12px; color: #c4c9ce; }
+
+/* History tab */
+.vl-history-empty {
+  padding: 24px 20px;
+  text-align: center;
+  font-size: 12px;
+  color: #8b98a5;
+  line-height: 1.5;
+}
+.vl-history-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid #1c1e22;
+}
+.vl-history-item:last-child { border-bottom: none; }
+.vl-history-meta {
+  font-size: 10.5px;
+  color: #8b98a5;
+  margin-bottom: 4px;
+}
+.vl-history-overall.green { color: #2ecc71; }
+.vl-history-overall.amber { color: #f39c12; }
+.vl-history-overall.red { color: #e74c3c; }
+.vl-history-overall.grey { color: #8b98a5; }
+.vl-history-overall { font-weight: 700; }
+.vl-history-caption {
+  font-size: 12px;
+  color: #c4c9ce;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+.vl-history-claims {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+.vl-history-claim {
+  font-size: 10.5px;
+  color: #aab4bd;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.vl-history-error {
+  font-size: 10.5px;
+  color: #e74c3c;
+  margin-top: 2px;
+  font-weight: 600;
+}
