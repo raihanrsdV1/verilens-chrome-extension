@@ -42,6 +42,51 @@
       </div>
     </section>
 
+    <!-- Detection behavior -->
+    <section class="vl-card">
+      <div class="vl-row">
+        <div>
+          <div class="vl-row-title">Scan on hover</div>
+          <div class="vl-row-desc">Automatically check images/videos when you hover over them.</div>
+        </div>
+        <label class="vl-switch">
+          <input type="checkbox" id="hoverToggle" />
+          <span class="vl-slider"></span>
+        </label>
+      </div>
+
+      <div class="vl-subsection">
+        <div class="vl-row-title">Video analysis length</div>
+        <div class="vl-row-desc">How much of a video the AI model watches before deciding.</div>
+        <select id="videoMaxSeconds" class="vl-select">
+          <option value="5">First 5 seconds</option>
+          <option value="10">First 10 seconds</option>
+          <option value="20">First 20 seconds</option>
+          <option value="30">First 30 seconds</option>
+          <option value="60">First 60 seconds</option>
+          <option value="0">Full video</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- AI Video Detection backend (Kaggle VideoVeritas via ngrok) -->
+    <section class="vl-card">
+      <div class="vl-row-title">AI Video Detection</div>
+      <div class="vl-row-desc">
+        Connect the Kaggle-hosted <strong>VideoVeritas</strong> model (exposed via ngrok)
+        to analyze videos for real vs. AI. Paste the ngrok URL from the notebook.
+      </div>
+      <input id="backendUrl" class="vl-input" type="text" spellcheck="false"
+             placeholder="https://xxxxx.ngrok-free.app" />
+      <div class="vl-backend-row">
+        <button id="backendTest" class="vl-btn-sm">Test connection</button>
+        <span id="backendStatus" class="vl-backend-status">Not connected</span>
+      </div>
+      <p class="vl-note" id="backendPremiumNote" hidden>
+        🔒 Video detection runs on the <strong>Premium</strong> plan.
+      </p>
+    </section>
+
     <!-- Session stats -->
     <section class="vl-card">
       <div class="vl-cat-head">This session</div>

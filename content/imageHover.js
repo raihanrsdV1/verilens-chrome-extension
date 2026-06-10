@@ -14,20 +14,34 @@
     return !!(window.chrome && chrome.runtime && chrome.runtime.id);
   }
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
+  // ── Auto-detect toggle ───────────────────────────────────────────────────────
+  // verilens_hover_detect_enabled (default true). Read once on load and kept in
+  // sync via storage.onChanged so the popup toggle takes effect immediately.
+  const HOVER_SETTING_KEY = "verilens_hover_detect_enabled";
+  let hoverEnabled = true;
 
-  // Video player selectors for supported platforms.
-  // X/Twitter renders overlay divs on top of the <video> tag, so mouseover
-  // lands on those divs — we walk up to find the player container instead.
-  const VIDEO_PLAYER_SELECTORS = [
-    '[data-testid="videoPlayer"]',
-    '[data-testid="videoComponent"]',
-    '[data-testid="tweetVideo"]',
-  ];
+  if (alive()) {
+    chrome.storage.local.get(HOVER_SETTING_KEY).then((o) => {
+      hoverEnabled = o[HOVER_SETTING_KEY] !== false;
+    }).catch(() => {});
+
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== "local" || !changes[HOVER_SETTING_KEY]) return;
+      hoverEnabled = changes[HOVER_SETTING_KEY].newValue !== false;
+      if (!hoverEnabled) {
+        clearTimeout(detectTimer);
+        destroyBadge();
+      }
+    });
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
 
   // Returns the canonical media element to use as the badge anchor:
   //   - the <img> itself (if large enough and not an avatar)
-  //   - the video player container div (if the hovered element is inside one)
+  //   - the <video> itself (if large enough)
+  //   - the nearest large-enough ancestor that CONTAINS a <video> (if the
+  //     hovered element is an overlay div sitting on top of the player)
   //   - null otherwise
   function findMediaTarget(hovered) {
     // 1. Direct <img> hit
@@ -38,18 +52,24 @@
       return (r.width >= 100 && r.height >= 100) ? hovered : null;
     }
 
-    // 2. Direct <video> hit (rare on X, possible on other platforms)
-    if (hovered.tagName === "VIDEO") return hovered;
+    // 2. Direct <video> hit
+    if (hovered.tagName === "VIDEO") {
+      const r = hovered.getBoundingClientRect();
+      return (r.width >= 100 && r.height >= 100) ? hovered : null;
+    }
 
-    // 3. Walk up the DOM looking for a video player container div.
-    //    This handles X/Twitter where overlay <div>s sit on top of <video>.
-    for (const sel of VIDEO_PLAYER_SELECTORS) {
-      const container = hovered.closest(sel);
-      if (container) {
-        // Verify it's big enough to be a real video (not a tiny thumbnail)
-        const r = container.getBoundingClientRect();
-        if (r.width >= 100 && r.height >= 100) return container;
+    // 3. Walk up the DOM looking for an ancestor that CONTAINS a <video>.
+    //    Every platform (X, Instagram, Facebook) renders overlay <div>s
+    //    (controls, play button, gradients) on top of the <video> tag, so
+    //    the hovered element is rarely the <video> itself.
+    let node = hovered;
+    for (let depth = 0; node && depth < 6; depth++) {
+      const video = node.querySelector && node.querySelector("video");
+      if (video) {
+        const r = node.getBoundingClientRect();
+        if (r.width >= 100 && r.height >= 100) return node;
       }
+      node = node.parentElement;
     }
 
     return null;
@@ -210,6 +230,14 @@
       hasAudio: false,
     };
 
+    // For videos, hand the real VideoVeritas backend the bytes/URL it needs. blob:
+    // srcs are captured here; https srcs are passed for the worker to fetch.
+    if (isVid && window.VerilensVideoCapture) {
+      payload.videoUrl = src;
+      const extra = await window.VerilensVideoCapture.prepare(src);
+      Object.assign(payload, extra);
+    }
+
     let res;
     try {
       res = await chrome.runtime.sendMessage({ type: "SCAN_DEEPFAKE", payload });
@@ -227,6 +255,7 @@
   // ── Event handling ───────────────────────────────────────────────────────────
 
   function onMouseOver(e) {
+    if (!hoverEnabled) return;
     const target = findMediaTarget(e.target);
     if (!target) return;
     clearTimeout(leaveTimer);

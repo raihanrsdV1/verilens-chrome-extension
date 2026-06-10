@@ -62,6 +62,17 @@
     );
   }
 
+  // Best-effort <video> src. On X this is almost always a blob:/MSE URL the real
+  // backend can't fetch — mock fallback. On IG/FB, often a fetchable HTTPS CDN URL.
+  function extractVideoUrl(postEl) {
+    const v = postEl.querySelector("video");
+    if (!v) return "";
+    const src = v.currentSrc || v.src;
+    if (src) return src;
+    const source = v.querySelector("source");
+    return source && source.src ? source.src : "";
+  }
+
   // Returns the shape the whole extension agrees on.
   function extractPostData(postEl) {
     const { postUrl, postId } = extractPermalink(postEl);
@@ -76,6 +87,7 @@
       imageUrls,
       captionText,
       hasVideo: video,
+      videoUrl: video ? extractVideoUrl(postEl) : "",
       // On X, native videos carry audio; treat them together for now.
       hasAudio: video,
     };

@@ -18,13 +18,15 @@ importScripts(
   "lib/cache.js",
   "lib/provenanceLocalMock.js",
   "lib/provenanceLocal.js",
-  "lib/mockBackend.js"
+  "lib/mockBackend.js",
+  "lib/realBackend.js"
 );
 
 const Cache = self.VerilensCache;
 const Mock = self.VerilensMock;
 const Tiers = self.VerilensTiers;
 const Provenance = self.VerilensProvenance;
+const RealBackend = self.VerilensRealBackend;
 
 const TIER_KEY = "verilens_tier";
 
@@ -94,6 +96,27 @@ async function handleDeepfake(payload) {
     return confirmedResult;
   }
 
+  // 2.5) REAL video deepfake via the hosted VideoVeritas model. Only fires when the
+  //      post has video, the user is premium-entitled, and a backend URL is set.
+  //      Any failure (no bytes, unreachable, bad response) falls through to the mock
+  //      so demos keep working. Image-only posts never hit this path.
+  if (payload.hasVideo && Tiers.isAllowed("deepfakeVideo", tier)) {
+    const backendUrl = await RealBackend.getBackendUrl();
+    if (backendUrl) {
+      log("deepfake = calling REAL VideoVeritas backend:", backendUrl);
+      const v = await RealBackend.detectVideo(payload);
+      if (v && !v.error) {
+        const result = buildVideoResult(payload, v);
+        result.cached = false;
+        await Cache.setVerdict(payload.postId, result, "deepfake");
+        await bumpStat("deepfakeScans");
+        log("deepfake → REAL video result:", result);
+        return result;
+      }
+      log("deepfake = real backend unavailable (" + (v && v.error) + ") — falling back to mock");
+    }
+  }
+
   // 3) STAGE B — backend (mock). Simulate first-scan latency so the UI gets to
   //    show loading states. (Real backend runs SynthID + the heavy pipeline.)
   log("deepfake = Stage A absent; calling backend (tier:", tier + ")");
@@ -128,6 +151,31 @@ function buildC2PAConfirmed(payload, prov) {
     },
     explanation:
       "This image carries signed C2PA Content Credentials declaring it was generated or edited with AI. That's a verifiable provenance signal — no model guess needed.",
+  };
+}
+
+// Shape a real VideoVeritas verdict into the deepfake contract. The model only
+// judges the VIDEO modality; image/audio are reported as not-analyzed here.
+function buildVideoResult(payload, v) {
+  const hasImage = (payload.imageUrls || []).length > 0;
+  return {
+    postId: payload.postId,
+    band: v.band,
+    confirmed: null,
+    provenance: { c2pa: "absent", synthid: "not_checked", source: null },
+    media: {
+      image: hasImage
+        ? { available: false, reason: "not_checked" }
+        : { available: false, reason: "no_image" },
+      video: { available: true, aiGenerated: v.prob, verdict: v.verdict },
+      audio: payload.hasAudio
+        ? { available: false, reason: "not_checked" }
+        : { available: false, reason: "no_audio" },
+    },
+    explanation:
+      (v.reason ? v.reason + " " : "") +
+      "Verdict from the VideoVeritas video model analyzing sampled frames.",
+    source: "videoveritas",
   };
 }
 
@@ -289,6 +337,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       getTier().then((tier) => sendResponse({ tier }));
       return true;
 
+    // Popup "Test connection" for the VideoVeritas backend (ngrok URL).
+    case "PING_BACKEND":
+      RealBackend.ping(msg.url)
+        .then(sendResponse)
+        .catch((e) => sendResponse({ ok: false, error: String(e) }));
+      return true;
+
     // Dev helper so we can flip tiers from the console before the popup exists.
     case "SET_TIER":
       chrome.storage.local
@@ -307,10 +362,16 @@ chrome.runtime.onInstalled.addListener(async () => {
     TIER_KEY,
     "verilens_autofilter_enabled",
     "verilens_filter_categories",
+    "verilens_backend_url",
+    "verilens_hover_detect_enabled",
+    "verilens_video_max_seconds",
   ]);
   const seed = {};
   if (o[TIER_KEY] === undefined) seed[TIER_KEY] = "free";
   if (o.verilens_autofilter_enabled === undefined) seed.verilens_autofilter_enabled = false;
+  if (o.verilens_backend_url === undefined) seed.verilens_backend_url = "";
+  if (o.verilens_hover_detect_enabled === undefined) seed.verilens_hover_detect_enabled = true;
+  if (o.verilens_video_max_seconds === undefined) seed.verilens_video_max_seconds = 20;
   if (o.verilens_filter_categories === undefined) {
     seed.verilens_filter_categories = {
       political: true,

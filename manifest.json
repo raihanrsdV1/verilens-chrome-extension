@@ -13,7 +13,12 @@
     "https://*.cdninstagram.com/*",
     "https://www.facebook.com/*",
     "https://facebook.com/*",
-    "https://*.fbcdn.net/*"
+    "https://*.fbcdn.net/*",
+    "https://video.twimg.com/*",
+    "https://*.ngrok-free.app/*",
+    "https://*.ngrok.app/*",
+    "https://*.ngrok-free.dev/*",
+    "https://*.ngrok.io/*"
   ],
   "background": {
     "service_worker": "service-worker.js"
@@ -32,6 +37,7 @@
         "content/adapters/twitter.js",
         "content/adapters/instagram.js",
         "content/adapters/facebook.js",
+        "content/videoCapture.js",
         "content/badge.js",
         "content/actions.js",
         "content/filter.js",

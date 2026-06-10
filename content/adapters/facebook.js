@@ -65,6 +65,17 @@
     return !!postEl.querySelector('video, [aria-label="Play"], [data-video-id]');
   }
 
+  // Best-effort <video> src. FB frequently uses blob:/MSE (can't be fetched); some
+  // posts expose a fetchable src attr or <source> child. Falls back to the mock.
+  function extractVideoUrl(postEl) {
+    const v = postEl.querySelector("video");
+    if (!v) return "";
+    const src = v.currentSrc || v.src;
+    if (src) return src;
+    const source = v.querySelector("source");
+    return source && source.src ? source.src : "";
+  }
+
   function extractPostData(postEl) {
     const { postUrl, postId } = extractPermalink(postEl);
     const captionText = extractCaption(postEl);
@@ -78,6 +89,7 @@
       imageUrls,
       captionText,
       hasVideo: video,
+      videoUrl: video ? extractVideoUrl(postEl) : "",
       hasAudio: video,
     };
   }

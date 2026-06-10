@@ -39,6 +39,17 @@
       .catch(() => "free");
   }
 
+  // Only worth the cost of capturing/recording video frames if a real backend
+  // is actually configured — otherwise the mock will be used and doesn't need
+  // video bytes at all.
+  function backendConfigured() {
+    if (!alive()) return Promise.resolve(false);
+    return chrome.storage.local
+      .get("verilens_backend_url")
+      .then((o) => !!(o.verilens_backend_url && String(o.verilens_backend_url).trim()))
+      .catch(() => false);
+  }
+
   // Create (once) the shadow host for a post and return its inner mount div.
   function ensureMount(postEl, anchor) {
     if (postEl.__verilensMount) return postEl.__verilensMount;
@@ -108,12 +119,23 @@
     };
   }
 
-  async function runDeepfake(data, mount, btn, refreshControls) {
-    log("→ SCAN_DEEPFAKE request payload:", data);
+  async function runDeepfake(data, mount, btn, refreshControls, postEl) {
     let res;
     await withLoading(btn, "Checking…", async () => {
+      // For videos, get pixels to the real VideoVeritas backend + pass the user's
+      // configured "video analysis length". For MSE blob: videos (IG/X/FB) this
+      // grabs real frames off the live <video> via canvas, so we need the element.
+      // Only worth doing when a real backend is actually configured (the mock
+      // doesn't need video bytes).
+      let payload = data;
+      if (data.hasVideo && g.VerilensVideoCapture && (await backendConfigured())) {
+        const videoEl = postEl && postEl.querySelector && postEl.querySelector("video");
+        const extra = await g.VerilensVideoCapture.prepareThorough(data.videoUrl, videoEl);
+        payload = { ...data, ...extra };
+      }
+      log("→ SCAN_DEEPFAKE request payload:", payload);
       try {
-        res = await chrome.runtime.sendMessage({ type: "SCAN_DEEPFAKE", payload: data });
+        res = await chrome.runtime.sendMessage({ type: "SCAN_DEEPFAKE", payload });
       } catch (e) {
         res = { error: String(e) };
       }
@@ -125,7 +147,7 @@
       g.VerilensBadge.renderUpgrade(
         mount,
         { kind: "deepfake", message: res.message },
-        makeUpgradeHandlers(refreshControls, () => runDeepfake(data, mount, btn, refreshControls))
+        makeUpgradeHandlers(refreshControls, () => runDeepfake(data, mount, btn, refreshControls, postEl))
       );
       return;
     }
@@ -191,7 +213,7 @@
       checkBtn.title = hasImage
         ? "Run AI deepfake detection on this image"
         : "Run AI deepfake detection on this video (Premium)";
-      checkBtn.addEventListener("click", () => runDeepfake(data, mount, checkBtn, refreshControls));
+      checkBtn.addEventListener("click", () => runDeepfake(data, mount, checkBtn, refreshControls, postEl));
       bar.append(checkBtn);
     }
 

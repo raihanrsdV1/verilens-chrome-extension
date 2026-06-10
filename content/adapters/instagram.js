@@ -60,6 +60,17 @@
     return !!postEl.querySelector("video");
   }
 
+  // IG <video> often exposes a direct cdninstagram/fbcdn src (via src attr or
+  // <source> child) that the worker CAN fetch, so real video detection usually works.
+  function extractVideoUrl(postEl) {
+    const v = postEl.querySelector("video");
+    if (!v) return "";
+    const src = v.currentSrc || v.src;
+    if (src) return src;
+    const source = v.querySelector("source");
+    return source && source.src ? source.src : "";
+  }
+
   function extractPostData(postEl) {
     const { postUrl, postId } = extractPermalink(postEl);
     const captionText = extractCaption(postEl);
@@ -73,6 +84,7 @@
       imageUrls,
       captionText,
       hasVideo: video,
+      videoUrl: video ? extractVideoUrl(postEl) : "",
       hasAudio: video,
     };
   }

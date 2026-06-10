@@ -22,6 +22,12 @@ const els = {
   catInputs: Array.from(document.querySelectorAll("[data-cat]")),
   tierToggle: document.getElementById("tierToggle"),
   tierLabel: document.getElementById("tierLabel"),
+  backendUrl: document.getElementById("backendUrl"),
+  backendTest: document.getElementById("backendTest"),
+  backendStatus: document.getElementById("backendStatus"),
+  backendPremiumNote: document.getElementById("backendPremiumNote"),
+  hoverToggle: document.getElementById("hoverToggle"),
+  videoMaxSeconds: document.getElementById("videoMaxSeconds"),
   upgradeCard: document.getElementById("upgradeCard"),
   premiumCard: document.getElementById("premiumCard"),
   upgradeBtn: document.getElementById("upgradeBtn"),
@@ -38,12 +44,18 @@ async function getState() {
     "verilens_autofilter_enabled",
     "verilens_filter_categories",
     "verilens_stats",
+    "verilens_backend_url",
+    "verilens_hover_detect_enabled",
+    "verilens_video_max_seconds",
   ]);
   return {
     tier: o.verilens_tier || "free",
     enabled: !!o.verilens_autofilter_enabled,
     categories: o.verilens_filter_categories || { ...DEFAULT_CATEGORIES },
     stats: o.verilens_stats || {},
+    backendUrl: o.verilens_backend_url || "",
+    hoverEnabled: o.verilens_hover_detect_enabled !== false,
+    videoMaxSeconds: typeof o.verilens_video_max_seconds === "number" ? o.verilens_video_max_seconds : 20,
   };
 }
 
@@ -79,6 +91,16 @@ function render(state) {
   // Upgrade screen vs. premium-active status
   els.upgradeCard.hidden = isPremium;
   els.premiumCard.hidden = !isPremium;
+
+  // Backend URL — don't clobber the field while the user is editing it.
+  if (document.activeElement !== els.backendUrl) {
+    els.backendUrl.value = state.backendUrl;
+  }
+  els.backendPremiumNote.hidden = isPremium;
+
+  // Detection settings
+  els.hoverToggle.checked = state.hoverEnabled;
+  els.videoMaxSeconds.value = String(state.videoMaxSeconds);
 }
 
 // Timing probe: how long from this script starting to the first full render.
@@ -128,6 +150,59 @@ els.resetStats.addEventListener("click", async () => {
   refresh();
 });
 
+// ---- AI Video Detection backend -------------------------------------------
+function setBackendStatus(text, cls) {
+  els.backendStatus.textContent = text;
+  els.backendStatus.className = "vl-backend-status" + (cls ? " " + cls : "");
+}
+
+// Persist the URL as the user types (debounced) so a scan can pick it up.
+let _saveTimer = null;
+els.backendUrl.addEventListener("input", () => {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(async () => {
+    await chrome.storage.local.set({ verilens_backend_url: els.backendUrl.value.trim() });
+  }, 300);
+});
+
+els.backendTest.addEventListener("click", async () => {
+  const url = els.backendUrl.value.trim();
+  await chrome.storage.local.set({ verilens_backend_url: url });
+  if (!url) {
+    setBackendStatus("Enter a URL first", "err");
+    return;
+  }
+  setBackendStatus("Testing…", "");
+  els.backendTest.disabled = true;
+  try {
+    const res = await chrome.runtime.sendMessage({ type: "PING_BACKEND", url });
+    if (res && res.ok) setBackendStatus("✓ Connected · " + shortModel(res.model), "ok");
+    else setBackendStatus("✗ " + ((res && res.error) || "Failed"), "err");
+  } catch (e) {
+    setBackendStatus("✗ " + String(e), "err");
+  } finally {
+    els.backendTest.disabled = false;
+  }
+});
+
+// ---- Detection settings ----------------------------------------------------
+els.hoverToggle.addEventListener("change", async () => {
+  await chrome.storage.local.set({ verilens_hover_detect_enabled: els.hoverToggle.checked });
+  refresh();
+});
+
+els.videoMaxSeconds.addEventListener("change", async () => {
+  await chrome.storage.local.set({ verilens_video_max_seconds: Number(els.videoMaxSeconds.value) });
+  refresh();
+});
+
+// vLLM reports the model as a long filesystem path; show just the last segment.
+function shortModel(m) {
+  if (!m) return "ready";
+  const parts = String(m).split(/[\\/]/);
+  return parts[parts.length - 1] || m;
+}
+
 // Keep the popup in sync if OUR settings change elsewhere (e.g. the in-page dev
 // "Enable premium" link). Ignore the cache key — it changes constantly during
 // classify and would cause needless re-renders.
@@ -137,7 +212,9 @@ chrome.storage.onChanged.addListener((changes, area) => {
     changes.verilens_tier ||
     changes.verilens_autofilter_enabled ||
     changes.verilens_filter_categories ||
-    changes.verilens_stats
+    changes.verilens_stats ||
+    changes.verilens_hover_detect_enabled ||
+    changes.verilens_video_max_seconds
   ) {
     refresh();
   }
