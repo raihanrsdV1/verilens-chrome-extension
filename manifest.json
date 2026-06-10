@@ -32,6 +32,7 @@
         "https://www.facebook.com/*"
       ],
       "js": [
+        "lib/config.local.js",
         "lib/hash.js",
         "lib/tiers.js",
         "content/adapters/twitter.js",

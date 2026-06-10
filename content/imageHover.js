@@ -15,19 +15,19 @@
   }
 
   // ── Auto-detect toggle ───────────────────────────────────────────────────────
-  // verilens_hover_detect_enabled (default true). Read once on load and kept in
+  // verilens_hover_detect_enabled (default false). Read once on load and kept in
   // sync via storage.onChanged so the popup toggle takes effect immediately.
   const HOVER_SETTING_KEY = "verilens_hover_detect_enabled";
-  let hoverEnabled = true;
+  let hoverEnabled = false;
 
   if (alive()) {
     chrome.storage.local.get(HOVER_SETTING_KEY).then((o) => {
-      hoverEnabled = o[HOVER_SETTING_KEY] !== false;
+      hoverEnabled = o[HOVER_SETTING_KEY] === true;
     }).catch(() => {});
 
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area !== "local" || !changes[HOVER_SETTING_KEY]) return;
-      hoverEnabled = changes[HOVER_SETTING_KEY].newValue !== false;
+      hoverEnabled = changes[HOVER_SETTING_KEY].newValue === true;
       if (!hoverEnabled) {
         clearTimeout(detectTimer);
         destroyBadge();

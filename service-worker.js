@@ -13,6 +13,7 @@
 // can be shared verbatim with the content scripts. Paths are relative to the
 // extension root.
 importScripts(
+  "lib/config.local.js",
   "lib/tiers.js",
   "lib/hash.js",
   "lib/cache.js",
@@ -382,20 +383,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       getTier().then((tier) => sendResponse({ tier }));
       return true;
 
-    // Popup "Test connection" for the VideoVeritas backend (ngrok URL).
-    case "PING_BACKEND":
-      RealBackend.ping(msg.url)
-        .then(sendResponse)
-        .catch((e) => sendResponse({ ok: false, error: String(e) }));
-      return true;
-
-    // Popup "Test connection" for the FSD image backend (ngrok URL).
-    case "PING_IMAGE_BACKEND":
-      RealBackend.pingImage(msg.url)
-        .then(sendResponse)
-        .catch((e) => sendResponse({ ok: false, error: String(e) }));
-      return true;
-
     // Dev helper so we can flip tiers from the console before the popup exists.
     case "SET_TIER":
       chrome.storage.local
@@ -414,17 +401,13 @@ chrome.runtime.onInstalled.addListener(async () => {
     TIER_KEY,
     "verilens_autofilter_enabled",
     "verilens_filter_categories",
-    "verilens_backend_url",
-    "verilens_image_backend_url",
     "verilens_hover_detect_enabled",
     "verilens_video_max_seconds",
   ]);
   const seed = {};
   if (o[TIER_KEY] === undefined) seed[TIER_KEY] = "free";
   if (o.verilens_autofilter_enabled === undefined) seed.verilens_autofilter_enabled = false;
-  if (o.verilens_backend_url === undefined) seed.verilens_backend_url = "";
-  if (o.verilens_image_backend_url === undefined) seed.verilens_image_backend_url = "";
-  if (o.verilens_hover_detect_enabled === undefined) seed.verilens_hover_detect_enabled = true;
+  if (o.verilens_hover_detect_enabled === undefined) seed.verilens_hover_detect_enabled = false;
   if (o.verilens_video_max_seconds === undefined) seed.verilens_video_max_seconds = 20;
   if (o.verilens_filter_categories === undefined) {
     seed.verilens_filter_categories = {

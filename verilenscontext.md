@@ -26,15 +26,27 @@ both the service worker (`importScripts`) and content scripts (manifest array).
 Plus a hover badge (imageHover.js) that runs the deepfake scan on hover over any
 image/video.
 
+## Config file (the ".env" for this extension)
+- `lib/config.local.js` (gitignored) — sets `globalThis.VerilensConfig =
+  {videoBackendUrl, imageBackendUrl}`. The ONLY place backend ngrok URLs live.
+  Loaded FIRST in both `manifest.json`'s `content_scripts[0].js` and
+  `service-worker.js`'s `importScripts`, so `lib/realBackend.js` and
+  `content/actions.js` can read it synchronously off `globalThis`.
+- `lib/config.local.example.js` (committed) — template with empty strings;
+  copy to `lib/config.local.js` and fill in real ngrok URLs.
+- The popup has **no URL input fields** — it only shows read-only connection
+  status for whatever URLs are in `lib/config.local.js`.
+
 ## File map (all paths relative to repo root)
 - `manifest.json` — MV3 config. permissions: `storage` only. host_permissions for
   x/twitter/pbs.twimg/instagram/cdninstagram/facebook/fbcdn. content_scripts inject
-  the lib + content files (order matters — deps first). web_accessible: styles.css.
-- `service-worker.js` — the "brain". Classic worker (importScripts). Routes messages,
-  enforces tier gate, checks local cache, calls mock backend (or real, see below),
-  bumps session stats, seeds defaults onInstalled. Message types: `SCAN_DEEPFAKE`,
-  `SCAN_FACTCHECK`, `DETECT_TEXT`, `CLASSIFY`, `GET_TIER`, `SET_TIER`,
-  `PING_BACKEND` (added). DEBUG=true logs to the SW console.
+  `lib/config.local.js` FIRST, then the rest of the lib + content files (order
+  matters — deps first). web_accessible: styles.css.
+- `service-worker.js` — the "brain". Classic worker (importScripts, with
+  `lib/config.local.js` first). Routes messages, enforces tier gate, checks local
+  cache, calls mock backend (or real, see below), bumps session stats, seeds
+  defaults onInstalled. Message types: `SCAN_DEEPFAKE`, `SCAN_FACTCHECK`,
+  `DETECT_TEXT`, `CLASSIFY`, `GET_TIER`, `SET_TIER`. DEBUG=true logs to the SW console.
 - `lib/tiers.js` — `VerilensTiers.TIER_RULES` + `isAllowed(feature, tier)`. SINGLE
   source of truth for gating. Features: deepfakeImage/Video/Audio, factCheck,
   autoFilter, detectText.
@@ -71,7 +83,8 @@ image/video.
 - `content/imageHover.js` — hover (400ms) over image/video → SCAN_DEEPFAKE → corner badge.
   `findMediaTarget` is platform-agnostic: direct `<img>`/`<video>` hit, or walks up to
   6 ancestors looking for one that contains a `<video>` (handles X/IG/FB overlay divs).
-  Gated by `verilens_hover_detect_enabled` (checked on mouseover, live via storage.onChanged).
+  Gated by `verilens_hover_detect_enabled` (checked on mouseover, live via
+  storage.onChanged), **default false / OFF**.
 - `content/videoCapture.js` (added) — `VerilensVideoCapture.{fromUrl, findVideoSrc, prepare,
   prepareThorough, captureFrames}`.
   - `prepare(videoUrl)` — QUICK (hover badge): only tries `fetch(blob:)` → `videoDataUrl`.
@@ -88,19 +101,28 @@ image/video.
     mock). Do NOT use `video.captureStream()`/`MediaRecorder` here — that crashed the
     renderer ("Aw, Snap!" / STATUS_BREAKPOINT) on these players.
 - `lib/realBackend.js` (added) — `VerilensRealBackend.{getBackendUrl, getImageBackendUrl,
-  ping, pingImage, detectVideo, detectImage}`. Two real backends, both SW-only, both
-  Kaggle+ngrok:
-  - `detectVideo` → VideoVeritas (vLLM OpenAI API), uses `verilens_backend_url`.
+  ping, detectVideo, detectImage}`. Two real backends, both SW-only, both
+  Kaggle+ngrok. `getBackendUrl`/`getImageBackendUrl` read
+  `globalThis.VerilensConfig.{videoBackendUrl,imageBackendUrl}` (from
+  `lib/config.local.js`) — no chrome.storage involved.
+  - `detectVideo` → VideoVeritas (vLLM OpenAI API), uses `videoBackendUrl`. `ping`
+    (GET /v1/models) is used internally to discover the served model id.
   - `detectImage` → FSD image forensics model (plain FastAPI), uses
-    `verilens_image_backend_url`. Fetches `imageUrls[0]` in the worker (host-perm CORS
+    `imageBackendUrl`. Fetches `imageUrls[0]` in the worker (host-perm CORS
     bypass) → base64 → `POST /detect {image_b64}` → `{is_fake, score}`. Maps is_fake→
     red/likely_ai, else green/likely_real; uses `score` as the %-AI when present, else
-    0.9/0.08. `pingImage` = `GET /health`.
-- `popup/popup.{html,js,css}` — popup: auto-filter toggle + categories, (added)
-  "Detection settings" card (hover-scan toggle + video analysis length select),
-  session stats, upgrade/premium card, Developer (tier dev-switch + reset stats),
-  and two backend config cards: "AI Video Detection" (VideoVeritas) and
-  "AI Image Detection" (FSD), each with a URL field + Test connection.
+    0.9/0.08.
+- `popup/popup.{html,js,css}` — tabbed popup (⚙ Settings / ❓ Help). No backend
+  status/connection UI at all — backend health is invisible to the user; failures
+  silently fall back to the mock.
+  - **Settings tab**: auto-filter toggle + categories (Premium-gated), "Detection
+    settings" card (hover-scan toggle, default OFF + video analysis length select),
+    session stats, upgrade/premium card, Developer (tier dev-switch + reset stats).
+  - **Help tab**: plain-language cards explaining Check media + band legend,
+    confirmed AI (C2PA/SynthID), Fact-check, Scan on hover, Video analysis length,
+    Auto content filter, AI model backends, and a Free vs Premium plan grid.
+  - Action buttons in posts use `.verilens-btn-primary` ("🔍 Check media", blue) and
+    `.verilens-btn-secondary` ("📰 Fact-check", green) — see content/styles.css.
 
 ## Backend contracts (must match exactly)
 - Deepfake req: `{postId, postUrl, contentHash, imageUrls[], captionText, hasVideo,
@@ -121,10 +143,11 @@ image/video.
 - `verilens_filter_categories` {political,ai_meme,ai_generated,misinformation}
 - `verilens_stats` {deepfakeScans, factCheckScans, confirmedAI, filteredPosts, detectTextScans}
 - `verilens_cache` LRU mirror
-- `verilens_backend_url` (added) — the ngrok URL of the VideoVeritas (video) server
-- `verilens_image_backend_url` (added) — the ngrok URL of the FSD (image) server
-- `verilens_hover_detect_enabled` (added) bool, default true — master switch for the
-  imageHover.js automatic hover-scan badge.
+- `verilens_hover_detect_enabled` (added) bool, **default false** — master switch for
+  the imageHover.js automatic hover-scan badge.
+
+> Backend ngrok URLs are NOT in chrome.storage — see "Config file" above
+> (`lib/config.local.js`).
 - `verilens_video_max_seconds` (added) number, default 20 — how many seconds of video
   `prepareThorough` records for the real backend; 0 = "Full video" (120s safety cap).
 
@@ -140,11 +163,23 @@ Uses `extra_body.mm_processor_kwargs = {fps:2, max_pixels:360*420}` (top-level
 `mm_processor_kwargs` in raw JSON). The server is localhost-only → needs **ngrok** to
 be reachable from the extension.
 
+### ngrok dual-account requirement (running both notebooks at once)
+ngrok's free plan gives each ACCOUNT one shared static domain. If both notebooks
+use the same authtoken, the second `ngrok.connect()` fails with `ERR_NGROK_334`
+("endpoint ... is already online"). Fix: use a SEPARATE free ngrok account +
+authtoken per notebook:
+- `videoveritas-ai-video-detection.ipynb` → Kaggle Secret `NGROK_AUTH_TOKEN_VIDEO`
+  (falls back to `NGROK_AUTH_TOKEN`).
+- `fsd-image-detector.ipynb` → Kaggle Secret `NGROK_AUTH_TOKEN_IMAGE` (falls back to
+  `NGROK_AUTH_TOKEN`).
+Both ngrok cells now print "Paste that URL into `lib/config.local.js`" instead of
+the old popup-field instructions.
+
 ## How the real VideoVeritas integration works (what I built)
 1. Notebook: an added cell installs pyngrok and opens an HTTP tunnel to port 8000,
    printing the public `https://*.ngrok-*.app` URL.
-2. User pastes that URL into the popup "AI Video Detection" card → saved to
-   `verilens_backend_url`. "Test connection" → SW `PING_BACKEND` → GET /v1/models.
+2. User pastes that URL into `lib/config.local.js` → `videoBackendUrl`. The popup's
+   "AI model backends" card pings it read-only via SW `PING_BACKEND` → GET /v1/models.
 3. When a **premium** user clicks "Check media" on a post **with video** and a backend
    URL is set, `actions.runDeepfake(…, postEl)` calls
    `videoCapture.prepareThorough(videoUrl, postEl.querySelector("video"))` BEFORE
@@ -169,9 +204,9 @@ be reachable from the extension.
 Mirrors the video path but simpler (no MSE problem — images are plain CDN URLs):
 1. Notebook `fsd-image-detector.ipynb` clones the FSD repo, loads `FSDDetector`, and
    (added cells) serves it via a tiny FastAPI app (`/health`, `/detect`) on port 8000,
-   tunneled with ngrok. Paste the URL into popup "AI Image Detection".
+   tunneled with ngrok. Paste the URL into `lib/config.local.js` → `imageBackendUrl`.
 2. `service-worker.handleDeepfake` runs the image real-detection block AFTER the
-   video block and BEFORE the mock: when `hasImage` and `verilens_image_backend_url`
+   video block and BEFORE the mock: when `hasImage` and `imageBackendUrl`
    is set, it calls `RealBackend.detectImage(payload)`. Image detection is FREE (no
    tier gate — `deepfakeImage` is a free feature). The worker fetches `imageUrls[0]`
    itself (host permissions cover pbs.twimg/cdninstagram/fbcdn), base64s it, and POSTs.

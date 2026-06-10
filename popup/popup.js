@@ -6,6 +6,9 @@
 //   verilens_tier                 "free" | "premium"
 //   verilens_autofilter_enabled   boolean (master switch)
 //   verilens_filter_categories    { political, ai_meme, ai_generated, misinformation }
+//
+// AI backend URLs (video/image) are NOT stored here and are not shown in this
+// popup at all — they live in lib/config.local.js (gitignored).
 
 const DEFAULT_CATEGORIES = {
   political: true,
@@ -16,19 +19,14 @@ const DEFAULT_CATEGORIES = {
 
 const els = {
   tierBadge: document.getElementById("tierBadge"),
+  tabs: Array.from(document.querySelectorAll(".vl-tab")),
+  panels: Array.from(document.querySelectorAll(".vl-panel")),
   autofilterToggle: document.getElementById("autofilterToggle"),
   premiumNote: document.getElementById("premiumNote"),
   categories: document.getElementById("categories"),
   catInputs: Array.from(document.querySelectorAll("[data-cat]")),
   tierToggle: document.getElementById("tierToggle"),
   tierLabel: document.getElementById("tierLabel"),
-  backendUrl: document.getElementById("backendUrl"),
-  backendTest: document.getElementById("backendTest"),
-  backendStatus: document.getElementById("backendStatus"),
-  backendPremiumNote: document.getElementById("backendPremiumNote"),
-  imageBackendUrl: document.getElementById("imageBackendUrl"),
-  imageBackendTest: document.getElementById("imageBackendTest"),
-  imageBackendStatus: document.getElementById("imageBackendStatus"),
   hoverToggle: document.getElementById("hoverToggle"),
   videoMaxSeconds: document.getElementById("videoMaxSeconds"),
   upgradeCard: document.getElementById("upgradeCard"),
@@ -47,8 +45,6 @@ async function getState() {
     "verilens_autofilter_enabled",
     "verilens_filter_categories",
     "verilens_stats",
-    "verilens_backend_url",
-    "verilens_image_backend_url",
     "verilens_hover_detect_enabled",
     "verilens_video_max_seconds",
   ]);
@@ -57,9 +53,7 @@ async function getState() {
     enabled: !!o.verilens_autofilter_enabled,
     categories: o.verilens_filter_categories || { ...DEFAULT_CATEGORIES },
     stats: o.verilens_stats || {},
-    backendUrl: o.verilens_backend_url || "",
-    imageBackendUrl: o.verilens_image_backend_url || "",
-    hoverEnabled: o.verilens_hover_detect_enabled !== false,
+    hoverEnabled: o.verilens_hover_detect_enabled === true,
     videoMaxSeconds: typeof o.verilens_video_max_seconds === "number" ? o.verilens_video_max_seconds : 20,
   };
 }
@@ -97,16 +91,6 @@ function render(state) {
   els.upgradeCard.hidden = isPremium;
   els.premiumCard.hidden = !isPremium;
 
-  // Backend URL — don't clobber the field while the user is editing it.
-  if (document.activeElement !== els.backendUrl) {
-    els.backendUrl.value = state.backendUrl;
-  }
-  els.backendPremiumNote.hidden = isPremium;
-
-  if (document.activeElement !== els.imageBackendUrl) {
-    els.imageBackendUrl.value = state.imageBackendUrl;
-  }
-
   // Detection settings
   els.hoverToggle.checked = state.hoverEnabled;
   els.videoMaxSeconds.value = String(state.videoMaxSeconds);
@@ -125,6 +109,20 @@ async function refresh() {
     console.log("[Verilens popup] ready in", Math.round(performance.now() - _t0), "ms");
   }
 }
+
+// ---- Tabs -------------------------------------------------------------------
+els.tabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const target = tab.dataset.tab;
+    els.tabs.forEach((t) => {
+      t.classList.toggle("active", t === tab);
+      t.setAttribute("aria-selected", t === tab ? "true" : "false");
+    });
+    els.panels.forEach((p) => {
+      p.hidden = p.dataset.panel !== target;
+    });
+  });
+});
 
 // ---- wiring ----------------------------------------------------------------
 els.tierToggle.addEventListener("change", async () => {
@@ -159,75 +157,6 @@ els.resetStats.addEventListener("click", async () => {
   refresh();
 });
 
-// ---- AI Video Detection backend -------------------------------------------
-function setBackendStatus(text, cls) {
-  els.backendStatus.textContent = text;
-  els.backendStatus.className = "vl-backend-status" + (cls ? " " + cls : "");
-}
-
-// Persist the URL as the user types (debounced) so a scan can pick it up.
-let _saveTimer = null;
-els.backendUrl.addEventListener("input", () => {
-  clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(async () => {
-    await chrome.storage.local.set({ verilens_backend_url: els.backendUrl.value.trim() });
-  }, 300);
-});
-
-els.backendTest.addEventListener("click", async () => {
-  const url = els.backendUrl.value.trim();
-  await chrome.storage.local.set({ verilens_backend_url: url });
-  if (!url) {
-    setBackendStatus("Enter a URL first", "err");
-    return;
-  }
-  setBackendStatus("Testing…", "");
-  els.backendTest.disabled = true;
-  try {
-    const res = await chrome.runtime.sendMessage({ type: "PING_BACKEND", url });
-    if (res && res.ok) setBackendStatus("✓ Connected · " + shortModel(res.model), "ok");
-    else setBackendStatus("✗ " + ((res && res.error) || "Failed"), "err");
-  } catch (e) {
-    setBackendStatus("✗ " + String(e), "err");
-  } finally {
-    els.backendTest.disabled = false;
-  }
-});
-
-// ---- AI Image Detection backend (FSD) -------------------------------------
-function setImageBackendStatus(text, cls) {
-  els.imageBackendStatus.textContent = text;
-  els.imageBackendStatus.className = "vl-backend-status" + (cls ? " " + cls : "");
-}
-
-let _imgSaveTimer = null;
-els.imageBackendUrl.addEventListener("input", () => {
-  clearTimeout(_imgSaveTimer);
-  _imgSaveTimer = setTimeout(async () => {
-    await chrome.storage.local.set({ verilens_image_backend_url: els.imageBackendUrl.value.trim() });
-  }, 300);
-});
-
-els.imageBackendTest.addEventListener("click", async () => {
-  const url = els.imageBackendUrl.value.trim();
-  await chrome.storage.local.set({ verilens_image_backend_url: url });
-  if (!url) {
-    setImageBackendStatus("Enter a URL first", "err");
-    return;
-  }
-  setImageBackendStatus("Testing…", "");
-  els.imageBackendTest.disabled = true;
-  try {
-    const res = await chrome.runtime.sendMessage({ type: "PING_IMAGE_BACKEND", url });
-    if (res && res.ok) setImageBackendStatus("✓ Connected · " + shortModel(res.model), "ok");
-    else setImageBackendStatus("✗ " + ((res && res.error) || "Failed"), "err");
-  } catch (e) {
-    setImageBackendStatus("✗ " + String(e), "err");
-  } finally {
-    els.imageBackendTest.disabled = false;
-  }
-});
-
 // ---- Detection settings ----------------------------------------------------
 els.hoverToggle.addEventListener("change", async () => {
   await chrome.storage.local.set({ verilens_hover_detect_enabled: els.hoverToggle.checked });
@@ -238,13 +167,6 @@ els.videoMaxSeconds.addEventListener("change", async () => {
   await chrome.storage.local.set({ verilens_video_max_seconds: Number(els.videoMaxSeconds.value) });
   refresh();
 });
-
-// vLLM reports the model as a long filesystem path; show just the last segment.
-function shortModel(m) {
-  if (!m) return "ready";
-  const parts = String(m).split(/[\\/]/);
-  return parts[parts.length - 1] || m;
-}
 
 // Keep the popup in sync if OUR settings change elsewhere (e.g. the in-page dev
 // "Enable premium" link). Ignore the cache key — it changes constantly during

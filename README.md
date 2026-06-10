@@ -19,6 +19,7 @@ This repository is the **extension (frontend) + a mock backend**. The real AI pi
 - [Caching](#caching)
 - [No build step — how modules are shared](#no-build-step--how-modules-are-shared)
 - [Getting started (load & test)](#getting-started-load--test)
+- [Configuring real AI backends (optional)](#configuring-real-ai-backends-optional)
 - [Dev tips & debugging](#dev-tips--debugging)
 - [Conventions for contributors](#conventions-for-contributors)
 - [Roadmap](#roadmap)
@@ -289,6 +290,54 @@ This keeps `tiers.js` / `hash.js` a true single source of truth with zero toolin
 
 ### After editing any file
 Click the **↻ reload** icon on the Verilens card, then **hard-refresh** the x.com tab.
+
+---
+
+## Configuring real AI backends (optional)
+
+Without any configuration, Verilens runs entirely on the **mock backend** —
+deterministic fake results, no setup required.
+
+To connect the real hosted models (VideoVeritas for video, FSD for images):
+
+1. Copy the example config:
+   ```sh
+   cp lib/config.local.example.js lib/config.local.js
+   ```
+   `lib/config.local.js` is **gitignored** — it's the only place backend URLs
+   live. There are **no URL fields in the popup**.
+2. Run the model notebooks on Kaggle:
+   - [`videoveritas-ai-video-detection.ipynb`](videoveritas-ai-video-detection.ipynb) — serves the video deepfake model and prints an ngrok URL.
+   - [`fsd-image-detector.ipynb`](fsd-image-detector.ipynb) — serves the image deepfake model and prints an ngrok URL.
+3. Paste the printed URLs into `lib/config.local.js`:
+   ```js
+   g.VerilensConfig = {
+     videoBackendUrl: "https://xxxx.ngrok-free.app", // from videoveritas-ai-video-detection.ipynb
+     imageBackendUrl: "https://yyyy.ngrok-free.app", // from fsd-image-detector.ipynb
+   };
+   ```
+   Leave a value as `""` to keep using the mock for that modality.
+4. Reload the extension at `chrome://extensions` and hard-refresh the social tab.
+
+If a configured backend is unreachable (or the URL is empty), Verilens
+silently falls back to the mock — "Check media" always returns a result.
+
+### Running both notebooks at the same time (ngrok)
+
+ngrok's free plan gives each **account** one shared static domain. If both
+notebooks authenticate with the **same** authtoken, the second tunnel fails
+with `ERR_NGROK_334` ("endpoint ... is already online").
+
+To run both simultaneously, use a **separate free ngrok account + authtoken**
+per notebook, added as Kaggle Secrets:
+- `videoveritas-ai-video-detection.ipynb` reads `NGROK_AUTH_TOKEN_VIDEO`
+  (falls back to `NGROK_AUTH_TOKEN`).
+- `fsd-image-detector.ipynb` reads `NGROK_AUTH_TOKEN_IMAGE` (falls back to
+  `NGROK_AUTH_TOKEN`).
+
+Just renaming/duplicating the same token under both secret names does **not**
+fix the conflict — the token has to come from a genuinely different ngrok
+account.
 
 ---
 

@@ -37,20 +37,47 @@
   background: #16181c;
   color: #e7e9ea;
   font-size: 12.5px;
-  font-weight: 600;
-  padding: 5px 12px;
+  font-weight: 700;
+  padding: 6px 14px;
   border-radius: 999px;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
 }
 .verilens-btn:hover {
   background: #1f2226;
   border-color: #3a3f44;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
 }
+.verilens-btn:active { transform: translateY(0); }
 .verilens-btn:disabled,
 .verilens-btn.loading {
   opacity: 0.6;
   cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+
+/* "Check media" — primary action, blue accent */
+.verilens-btn-primary {
+  border-color: rgba(29, 155, 240, 0.4);
+  background: rgba(29, 155, 240, 0.12);
+  color: #8ecdf7;
+}
+.verilens-btn-primary:hover {
+  background: rgba(29, 155, 240, 0.22);
+  border-color: rgba(29, 155, 240, 0.65);
+}
+
+/* "Fact-check" — secondary action, green accent */
+.verilens-btn-secondary {
+  border-color: rgba(46, 204, 113, 0.4);
+  background: rgba(46, 204, 113, 0.12);
+  color: #7fe0ab;
+}
+.verilens-btn-secondary:hover {
+  background: rgba(46, 204, 113, 0.22);
+  border-color: rgba(46, 204, 113, 0.65);
 }
 
 /* ---- Result panel ---- */
@@ -161,6 +188,7 @@
 
 .verilens-btn.locked {
   border-style: dashed;
+  background: #16181c;
   color: #c9b27a;
 }
 

@@ -16,139 +16,232 @@
       <span id="tierBadge" class="vl-tier">free</span>
     </header>
 
-    <!-- Auto content filter (premium) -->
-    <section class="vl-card">
-      <div class="vl-row">
-        <div>
-          <div class="vl-row-title">Auto content filter</div>
-          <div class="vl-row-desc">Automatically hide flagged posts as you scroll.</div>
+    <nav class="vl-tabs" role="tablist">
+      <button class="vl-tab active" data-tab="settings" type="button" role="tab" aria-selected="true">⚙ Settings</button>
+      <button class="vl-tab" data-tab="help" type="button" role="tab" aria-selected="false">❓ Help</button>
+    </nav>
+
+    <!-- ============================== SETTINGS ============================== -->
+    <div class="vl-panel" data-panel="settings">
+
+      <!-- Auto content filter (premium) -->
+      <section class="vl-card">
+        <div class="vl-row">
+          <div>
+            <div class="vl-row-title">🙈 Auto content filter</div>
+            <div class="vl-row-desc">Automatically hide flagged posts as you scroll.</div>
+          </div>
+          <label class="vl-switch">
+            <input type="checkbox" id="autofilterToggle" />
+            <span class="vl-slider"></span>
+          </label>
         </div>
-        <label class="vl-switch">
-          <input type="checkbox" id="autofilterToggle" />
-          <span class="vl-slider"></span>
-        </label>
-      </div>
 
-      <p id="premiumNote" class="vl-note" hidden>
-        🔒 Auto filtering is a <strong>Premium</strong> feature. Manual checks still work on the free plan.
-      </p>
+        <p id="premiumNote" class="vl-note" hidden>
+          🔒 Auto filtering is a <strong>Premium</strong> feature. Manual checks still work on the free plan.
+        </p>
 
-      <div id="categories" class="vl-categories">
-        <div class="vl-cat-head">Hide these categories</div>
-        <label class="vl-check"><input type="checkbox" data-cat="political" /> Political</label>
-        <label class="vl-check"><input type="checkbox" data-cat="ai_meme" /> AI meme</label>
-        <label class="vl-check"><input type="checkbox" data-cat="ai_generated" /> AI-generated</label>
-        <label class="vl-check"><input type="checkbox" data-cat="misinformation" /> Misinformation</label>
-      </div>
-    </section>
-
-    <!-- Detection behavior -->
-    <section class="vl-card">
-      <div class="vl-row">
-        <div>
-          <div class="vl-row-title">Scan on hover</div>
-          <div class="vl-row-desc">Automatically check images/videos when you hover over them.</div>
+        <div id="categories" class="vl-categories">
+          <div class="vl-cat-head">Hide these categories</div>
+          <div class="vl-cat-grid">
+            <label class="vl-check"><input type="checkbox" data-cat="political" /> Political</label>
+            <label class="vl-check"><input type="checkbox" data-cat="ai_meme" /> AI meme</label>
+            <label class="vl-check"><input type="checkbox" data-cat="ai_generated" /> AI-generated</label>
+            <label class="vl-check"><input type="checkbox" data-cat="misinformation" /> Misinformation</label>
+          </div>
         </div>
-        <label class="vl-switch">
-          <input type="checkbox" id="hoverToggle" />
-          <span class="vl-slider"></span>
-        </label>
-      </div>
+      </section>
 
-      <div class="vl-subsection">
-        <div class="vl-row-title">Video analysis length</div>
-        <div class="vl-row-desc">How much of a video the AI model watches before deciding.</div>
-        <select id="videoMaxSeconds" class="vl-select">
-          <option value="5">First 5 seconds</option>
-          <option value="10">First 10 seconds</option>
-          <option value="20">First 20 seconds</option>
-          <option value="30">First 30 seconds</option>
-          <option value="60">First 60 seconds</option>
-          <option value="0">Full video</option>
-        </select>
-      </div>
-    </section>
-
-    <!-- AI Video Detection backend (Kaggle VideoVeritas via ngrok) -->
-    <section class="vl-card">
-      <div class="vl-row-title">AI Video Detection</div>
-      <div class="vl-row-desc">
-        Connect the Kaggle-hosted <strong>VideoVeritas</strong> model (exposed via ngrok)
-        to analyze videos for real vs. AI. Paste the ngrok URL from the notebook.
-      </div>
-      <input id="backendUrl" class="vl-input" type="text" spellcheck="false"
-             placeholder="https://xxxxx.ngrok-free.app" />
-      <div class="vl-backend-row">
-        <button id="backendTest" class="vl-btn-sm">Test connection</button>
-        <span id="backendStatus" class="vl-backend-status">Not connected</span>
-      </div>
-      <p class="vl-note" id="backendPremiumNote" hidden>
-        🔒 Video detection runs on the <strong>Premium</strong> plan.
-      </p>
-    </section>
-
-    <!-- AI Image Detection backend (Kaggle FSD via ngrok) -->
-    <section class="vl-card">
-      <div class="vl-row-title">AI Image Detection</div>
-      <div class="vl-row-desc">
-        Connect the Kaggle-hosted <strong>FSD</strong> image forensics model (exposed via ngrok)
-        to analyze images for real vs. AI. Paste the ngrok URL from the notebook.
-      </div>
-      <input id="imageBackendUrl" class="vl-input" type="text" spellcheck="false"
-             placeholder="https://xxxxx.ngrok-free.app" />
-      <div class="vl-backend-row">
-        <button id="imageBackendTest" class="vl-btn-sm">Test connection</button>
-        <span id="imageBackendStatus" class="vl-backend-status">Not connected</span>
-      </div>
-    </section>
-
-    <!-- Session stats -->
-    <section class="vl-card">
-      <div class="vl-cat-head">This session</div>
-      <div class="vl-stats">
-        <div class="vl-stat"><span id="statScans" class="vl-stat-num">0</span><span class="vl-stat-label">Media checks</span></div>
-        <div class="vl-stat"><span id="statFacts" class="vl-stat-num">0</span><span class="vl-stat-label">Fact-checks</span></div>
-        <div class="vl-stat"><span id="statConfirmed" class="vl-stat-num">0</span><span class="vl-stat-label">Confirmed AI</span></div>
-        <div class="vl-stat"><span id="statFiltered" class="vl-stat-num">0</span><span class="vl-stat-label">Filtered</span></div>
-      </div>
-    </section>
-
-    <!-- Upgrade screen (free) / status (premium) -->
-    <section class="vl-card vl-upgrade" id="upgradeCard">
-      <div class="vl-upgrade-head">Unlock Premium</div>
-      <ul class="vl-benefits">
-        <li>Video &amp; audio deepfake detection</li>
-        <li>Agentic fact-checking with sources</li>
-        <li>Automatic content filtering</li>
-      </ul>
-      <button id="upgradeBtn" class="vl-cta">Upgrade to Premium</button>
-    </section>
-
-    <section class="vl-card vl-premium-active" id="premiumCard" hidden>
-      <div class="vl-premium-head">✓ Premium active</div>
-      <div class="vl-row-desc">All detection and filtering features are unlocked.</div>
-    </section>
-
-    <!-- Developer tools (collapsed) -->
-    <details class="vl-card vl-dev">
-      <summary class="vl-dev-summary">Developer</summary>
-
-      <div class="vl-row">
-        <div>
-          <div class="vl-row-title">Plan</div>
-          <div class="vl-row-desc">Switch your tier to test gated features.</div>
+      <!-- Detection behavior -->
+      <section class="vl-card">
+        <div class="vl-row">
+          <div>
+            <div class="vl-row-title">👁 Scan on hover</div>
+            <div class="vl-row-desc">Automatically check images/videos when you hover over them.</div>
+          </div>
+          <label class="vl-switch">
+            <input type="checkbox" id="hoverToggle" />
+            <span class="vl-slider"></span>
+          </label>
         </div>
-        <label class="vl-switch">
-          <input type="checkbox" id="tierToggle" />
-          <span class="vl-slider"></span>
-        </label>
-      </div>
-      <div class="vl-row-desc" id="tierLabel">Free</div>
 
-      <button id="resetStats" class="vl-dev-link">Reset session stats</button>
-    </details>
+        <div class="vl-subsection">
+          <div class="vl-row-title">🎞 Video analysis length</div>
+          <div class="vl-row-desc">How much of a video the AI model watches before deciding.</div>
+          <select id="videoMaxSeconds" class="vl-select">
+            <option value="5">First 5 seconds</option>
+            <option value="10">First 10 seconds</option>
+            <option value="20">First 20 seconds</option>
+            <option value="30">First 30 seconds</option>
+            <option value="60">First 60 seconds</option>
+            <option value="0">Full video</option>
+          </select>
+        </div>
+      </section>
 
-    <footer class="vl-footer">M4 · mock backend</footer>
+      <!-- Session stats -->
+      <section class="vl-card">
+        <div class="vl-cat-head">This session</div>
+        <div class="vl-stats">
+          <div class="vl-stat"><span id="statScans" class="vl-stat-num">0</span><span class="vl-stat-label">Media checks</span></div>
+          <div class="vl-stat"><span id="statFacts" class="vl-stat-num">0</span><span class="vl-stat-label">Fact-checks</span></div>
+          <div class="vl-stat"><span id="statConfirmed" class="vl-stat-num">0</span><span class="vl-stat-label">Confirmed AI</span></div>
+          <div class="vl-stat"><span id="statFiltered" class="vl-stat-num">0</span><span class="vl-stat-label">Filtered</span></div>
+        </div>
+      </section>
+
+      <!-- Upgrade screen (free) / status (premium) -->
+      <section class="vl-card vl-upgrade" id="upgradeCard">
+        <div class="vl-upgrade-head">Unlock Premium</div>
+        <ul class="vl-benefits">
+          <li>Video &amp; audio deepfake detection</li>
+          <li>Agentic fact-checking with sources</li>
+          <li>Automatic content filtering</li>
+        </ul>
+        <button id="upgradeBtn" class="vl-cta">Upgrade to Premium</button>
+      </section>
+
+      <section class="vl-card vl-premium-active" id="premiumCard" hidden>
+        <div class="vl-premium-head">✓ Premium active</div>
+        <div class="vl-row-desc">All detection and filtering features are unlocked.</div>
+      </section>
+
+      <!-- Developer tools (collapsed) -->
+      <details class="vl-card vl-dev">
+        <summary class="vl-dev-summary">Developer</summary>
+
+        <div class="vl-row">
+          <div>
+            <div class="vl-row-title">Plan</div>
+            <div class="vl-row-desc">Switch your tier to test gated features.</div>
+          </div>
+          <label class="vl-switch">
+            <input type="checkbox" id="tierToggle" />
+            <span class="vl-slider"></span>
+          </label>
+        </div>
+        <div class="vl-row-desc" id="tierLabel">Free</div>
+
+        <button id="resetStats" class="vl-dev-link">Reset session stats</button>
+      </details>
+    </div>
+
+    <!-- ================================ HELP ================================ -->
+    <div class="vl-panel" data-panel="help" hidden>
+
+      <section class="vl-card">
+        <div class="vl-row-title">👋 What does Verilens do?</div>
+        <p class="vl-help-text">
+          Verilens adds small AI-powered checks directly into your social feed
+          (X/Twitter, Instagram, Facebook). It never posts or changes anything —
+          it only analyzes what you choose to check and shows you the result.
+        </p>
+      </section>
+
+      <section class="vl-card">
+        <div class="vl-row-title">🔍 "Check media" button</div>
+        <p class="vl-help-text">
+          Appears under posts with an image or video. Click it to ask an AI model
+          "is this real or AI-generated?" The result shows as a colored badge:
+        </p>
+        <div class="vl-legend">
+          <div class="vl-legend-row"><span class="vl-dot green"></span> <strong>Likely real</strong> — looks like genuine, unedited media.</div>
+          <div class="vl-legend-row"><span class="vl-dot amber"></span> <strong>Uncertain</strong> — the model isn't confident either way.</div>
+          <div class="vl-legend-row"><span class="vl-dot red"></span> <strong>Likely AI / fake</strong> — strong signs of AI generation or manipulation.</div>
+        </div>
+        <p class="vl-help-text">
+          Image checks are <strong>free</strong>. Video (and audio) checks need
+          heavier multimodal models and are part of <strong>Premium</strong>.
+        </p>
+      </section>
+
+      <section class="vl-card">
+        <div class="vl-row-title">✅ Confirmed AI badges (C2PA / SynthID)</div>
+        <p class="vl-help-text">
+          Some images carry an invisible, cryptographically signed "AI-made" label
+          from the tool that created them (e.g. C2PA Content Credentials or
+          Google SynthID). When Verilens finds one, it shows
+          <strong>"Confirmed AI"</strong> immediately — this is stronger evidence
+          than a model's guess, since it's a verified signature, not an estimate.
+        </p>
+      </section>
+
+      <section class="vl-card">
+        <div class="vl-row-title">📰 "Fact-check" button</div>
+        <p class="vl-help-text">
+          Appears under posts with text. Click it to have an AI agent look up the
+          claims in the post against trusted sources and show you whether each
+          claim looks true, false, or unverifiable — with links to what it found.
+          This is a <strong>Premium</strong> feature since it does live research.
+        </p>
+      </section>
+
+      <section class="vl-card">
+        <div class="vl-row-title">👁 Scan on hover</div>
+        <p class="vl-help-text">
+          When turned on, simply hovering over an image or video for a moment
+          automatically runs a quick "Check media" scan and shows a small badge
+          in the corner — no click needed. Off by default to save on
+          checks/bandwidth; turn it on if you want passive scanning while you scroll.
+        </p>
+      </section>
+
+      <section class="vl-card">
+        <div class="vl-row-title">🎞 Video analysis length</div>
+        <p class="vl-help-text">
+          Controls how many seconds of a video the AI model actually watches.
+          Shorter = faster results; "Full video" gives the model the most context
+          but takes longer to analyze.
+        </p>
+      </section>
+
+      <section class="vl-card">
+        <div class="vl-row-title">🙈 Auto content filter</div>
+        <p class="vl-help-text">
+          A <strong>Premium</strong> feature that scans posts as you scroll and
+          blurs anything matching the categories you've selected (political,
+          AI memes, AI-generated media, misinformation). Each blurred post has a
+          "Show anyway" button if you want to see it.
+        </p>
+      </section>
+
+      <section class="vl-card">
+        <div class="vl-row-title">🧠 AI model backends</div>
+        <p class="vl-help-text">
+          Verilens can connect to real, hosted AI models for video and image
+          detection. If a model server isn't running, Verilens automatically uses
+          a built-in demo model instead — so "Check media" always returns a
+          result either way.
+        </p>
+      </section>
+
+      <section class="vl-card">
+        <div class="vl-row-title">⭐ Free vs. Premium</div>
+        <div class="vl-plan-grid">
+          <div class="vl-plan-col">
+            <div class="vl-plan-head">Free</div>
+            <ul class="vl-plan-list">
+              <li>Image deepfake checks</li>
+              <li>AI text detection on selected text</li>
+            </ul>
+          </div>
+          <div class="vl-plan-col">
+            <div class="vl-plan-head">Premium</div>
+            <ul class="vl-plan-list">
+              <li>Video &amp; audio deepfake checks</li>
+              <li>Fact-checking with sources</li>
+              <li>Automatic content filtering</li>
+            </ul>
+          </div>
+        </div>
+        <p class="vl-help-text">
+          Use the <strong>Developer → Plan</strong> switch on the Settings tab to
+          try Premium features while testing.
+        </p>
+      </section>
+    </div>
+
+    <footer class="vl-footer">Verilens v0.1.0</footer>
 
     <script src="popup.js"></script>
   </body>

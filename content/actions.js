@@ -40,14 +40,11 @@
   }
 
   // Only worth the cost of capturing/recording video frames if a real backend
-  // is actually configured — otherwise the mock will be used and doesn't need
-  // video bytes at all.
+  // is actually configured (lib/config.local.js) — otherwise the mock will be
+  // used and doesn't need video bytes at all.
   function backendConfigured() {
-    if (!alive()) return Promise.resolve(false);
-    return chrome.storage.local
-      .get("verilens_backend_url")
-      .then((o) => !!(o.verilens_backend_url && String(o.verilens_backend_url).trim()))
-      .catch(() => false);
+    const url = g.VerilensConfig && g.VerilensConfig.videoBackendUrl;
+    return Promise.resolve(!!(url && String(url).trim()));
   }
 
   // Create (once) the shadow host for a post and return its inner mount div.
@@ -209,7 +206,7 @@
     const deepfakeFeature = hasImage ? "deepfakeImage" : "deepfakeVideo";
 
     if (showDeepfake) {
-      checkBtn = el("button", "verilens-btn", "Check media");
+      checkBtn = el("button", "verilens-btn verilens-btn-primary", "🔍 Check media");
       checkBtn.title = hasImage
         ? "Run AI deepfake detection on this image"
         : "Run AI deepfake detection on this video (Premium)";
@@ -218,7 +215,7 @@
     }
 
     if (showFactcheck) {
-      factBtn = el("button", "verilens-btn", "Fact-check");
+      factBtn = el("button", "verilens-btn verilens-btn-secondary", "📰 Fact-check");
       factBtn.title = "Verify the claims in this post against trusted sources";
       factBtn.addEventListener("click", () => runFactcheck(data, mount, factBtn, refreshControls));
       bar.append(factBtn);
@@ -230,12 +227,12 @@
       const tier = await getTier();
       if (checkBtn) {
         const locked = !Tiers.isAllowed(deepfakeFeature, tier);
-        checkBtn.textContent = locked ? "🔒 Check media" : "Check media";
+        checkBtn.textContent = locked ? "🔒 Check media" : "🔍 Check media";
         checkBtn.classList.toggle("locked", locked);
       }
       if (factBtn) {
         const locked = !Tiers.isAllowed("factCheck", tier);
-        factBtn.textContent = locked ? "🔒 Fact-check" : "Fact-check";
+        factBtn.textContent = locked ? "🔒 Fact-check" : "📰 Fact-check";
         factBtn.classList.toggle("locked", locked);
       }
     }
