@@ -117,6 +117,27 @@ async function handleDeepfake(payload) {
     }
   }
 
+  // 2.7) REAL image deepfake via the hosted FSD model. Fires when the post has an
+  //      image and an image backend URL is set. Image detection is FREE (no tier
+  //      gate). Runs AFTER the video block so image+video posts still prefer the
+  //      richer video model. Any failure falls through to the mock.
+  if (hasImage) {
+    const imageBackendUrl = await RealBackend.getImageBackendUrl();
+    if (imageBackendUrl) {
+      log("deepfake = calling REAL FSD image backend:", imageBackendUrl);
+      const im = await RealBackend.detectImage(payload);
+      if (im && !im.error) {
+        const result = buildImageResult(payload, im);
+        result.cached = false;
+        await Cache.setVerdict(payload.postId, result, "deepfake");
+        await bumpStat("deepfakeScans");
+        log("deepfake → REAL image result:", result);
+        return result;
+      }
+      log("deepfake = FSD image backend unavailable (" + (im && im.error) + ") — falling back to mock");
+    }
+  }
+
   // 3) STAGE B — backend (mock). Simulate first-scan latency so the UI gets to
   //    show loading states. (Real backend runs SynthID + the heavy pipeline.)
   log("deepfake = Stage A absent; calling backend (tier:", tier + ")");
@@ -176,6 +197,30 @@ function buildVideoResult(payload, v) {
       (v.reason ? v.reason + " " : "") +
       "Verdict from the VideoVeritas video model analyzing sampled frames.",
     source: "videoveritas",
+  };
+}
+
+// Shape a real FSD verdict into the deepfake contract. FSD judges only the IMAGE
+// modality (binary real-vs-AI); video/audio are reported as not-analyzed here.
+function buildImageResult(payload, im) {
+  return {
+    postId: payload.postId,
+    band: im.band,
+    confirmed: null,
+    provenance: { c2pa: "absent", synthid: "not_checked", source: null },
+    media: {
+      image: { available: true, aiGenerated: im.prob, verdict: im.verdict },
+      video: payload.hasVideo
+        ? { available: false, reason: "not_checked" }
+        : { available: false, reason: "no_video" },
+      audio: payload.hasAudio
+        ? { available: false, reason: "not_checked" }
+        : { available: false, reason: "no_audio" },
+    },
+    explanation:
+      (im.reason ? im.reason + " " : "") +
+      "Verdict from the FSD (Forensic Self-Descriptions) image forensics model.",
+    source: "fsd",
   };
 }
 
@@ -344,6 +389,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         .catch((e) => sendResponse({ ok: false, error: String(e) }));
       return true;
 
+    // Popup "Test connection" for the FSD image backend (ngrok URL).
+    case "PING_IMAGE_BACKEND":
+      RealBackend.pingImage(msg.url)
+        .then(sendResponse)
+        .catch((e) => sendResponse({ ok: false, error: String(e) }));
+      return true;
+
     // Dev helper so we can flip tiers from the console before the popup exists.
     case "SET_TIER":
       chrome.storage.local
@@ -363,6 +415,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     "verilens_autofilter_enabled",
     "verilens_filter_categories",
     "verilens_backend_url",
+    "verilens_image_backend_url",
     "verilens_hover_detect_enabled",
     "verilens_video_max_seconds",
   ]);
@@ -370,6 +423,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   if (o[TIER_KEY] === undefined) seed[TIER_KEY] = "free";
   if (o.verilens_autofilter_enabled === undefined) seed.verilens_autofilter_enabled = false;
   if (o.verilens_backend_url === undefined) seed.verilens_backend_url = "";
+  if (o.verilens_image_backend_url === undefined) seed.verilens_image_backend_url = "";
   if (o.verilens_hover_detect_enabled === undefined) seed.verilens_hover_detect_enabled = true;
   if (o.verilens_video_max_seconds === undefined) seed.verilens_video_max_seconds = 20;
   if (o.verilens_filter_categories === undefined) {

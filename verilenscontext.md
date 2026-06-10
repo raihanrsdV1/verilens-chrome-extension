@@ -87,12 +87,20 @@ image/video.
     canvas read-back is NOT tainted (unless DRM/EME → SecurityError → returns null →
     mock). Do NOT use `video.captureStream()`/`MediaRecorder` here — that crashed the
     renderer ("Aw, Snap!" / STATUS_BREAKPOINT) on these players.
-- `lib/realBackend.js` (added) — `VerilensRealBackend.{getBackendUrl, ping, detectVideo}`.
-  Real video deepfake via the Kaggle-hosted VideoVeritas model. SW-only.
+- `lib/realBackend.js` (added) — `VerilensRealBackend.{getBackendUrl, getImageBackendUrl,
+  ping, pingImage, detectVideo, detectImage}`. Two real backends, both SW-only, both
+  Kaggle+ngrok:
+  - `detectVideo` → VideoVeritas (vLLM OpenAI API), uses `verilens_backend_url`.
+  - `detectImage` → FSD image forensics model (plain FastAPI), uses
+    `verilens_image_backend_url`. Fetches `imageUrls[0]` in the worker (host-perm CORS
+    bypass) → base64 → `POST /detect {image_b64}` → `{is_fake, score}`. Maps is_fake→
+    red/likely_ai, else green/likely_real; uses `score` as the %-AI when present, else
+    0.9/0.08. `pingImage` = `GET /health`.
 - `popup/popup.{html,js,css}` — popup: auto-filter toggle + categories, (added)
   "Detection settings" card (hover-scan toggle + video analysis length select),
   session stats, upgrade/premium card, Developer (tier dev-switch + reset stats),
-  and an "AI Video Detection" backend config card.
+  and two backend config cards: "AI Video Detection" (VideoVeritas) and
+  "AI Image Detection" (FSD), each with a URL field + Test connection.
 
 ## Backend contracts (must match exactly)
 - Deepfake req: `{postId, postUrl, contentHash, imageUrls[], captionText, hasVideo,
@@ -113,7 +121,8 @@ image/video.
 - `verilens_filter_categories` {political,ai_meme,ai_generated,misinformation}
 - `verilens_stats` {deepfakeScans, factCheckScans, confirmedAI, filteredPosts, detectTextScans}
 - `verilens_cache` LRU mirror
-- `verilens_backend_url` (added) — the ngrok URL of the VideoVeritas server
+- `verilens_backend_url` (added) — the ngrok URL of the VideoVeritas (video) server
+- `verilens_image_backend_url` (added) — the ngrok URL of the FSD (image) server
 - `verilens_hover_detect_enabled` (added) bool, default true — master switch for the
   imageHover.js automatic hover-scan badge.
 - `verilens_video_max_seconds` (added) number, default 20 — how many seconds of video
@@ -156,6 +165,21 @@ be reachable from the extension.
 5. If no backend / no pixels / request fails → **falls back to the mock** so demos still
    work. All requests send `ngrok-skip-browser-warning: true` to skip ngrok's interstitial.
 
+## How the real FSD image integration works (what I built)
+Mirrors the video path but simpler (no MSE problem — images are plain CDN URLs):
+1. Notebook `fsd-image-detector.ipynb` clones the FSD repo, loads `FSDDetector`, and
+   (added cells) serves it via a tiny FastAPI app (`/health`, `/detect`) on port 8000,
+   tunneled with ngrok. Paste the URL into popup "AI Image Detection".
+2. `service-worker.handleDeepfake` runs the image real-detection block AFTER the
+   video block and BEFORE the mock: when `hasImage` and `verilens_image_backend_url`
+   is set, it calls `RealBackend.detectImage(payload)`. Image detection is FREE (no
+   tier gate — `deepfakeImage` is a free feature). The worker fetches `imageUrls[0]`
+   itself (host permissions cover pbs.twimg/cdninstagram/fbcdn), base64s it, and POSTs.
+3. Precedence: video posts (`hasVideo` + premium + video URL) still go to VideoVeritas
+   first; pure image posts go to FSD; any failure falls through to the mock.
+4. `buildImageResult` shapes `{is_fake, score}` into the deepfake contract
+   (media.image.aiGenerated/verdict, source "fsd"), then caches it.
+
 ### Remaining limitation (documented, expected)
 Frame capture needs the `<video>` to be decodable in the DOM (metadata loaded,
 buffered range covering the sampled window) and not DRM/EME-protected (Netflix-style
@@ -164,6 +188,16 @@ video hasn't started/buffered when "Check media" is clicked, frames may be spars
 the model still gets what's buffered. Do NOT "fix" capture with
 `captureStream()`/`MediaRecorder` on the page `<video>` — it crashed the renderer on
 MSE players; see content/videoCapture.js.
+
+## The notebook: fsd-image-detector.ipynb
+Kaggle GPU (T4/P100) notebook. Clones **Forensic-Self-Descriptions-CVPR25** (FSD,
+CVPR'25), `uv pip install -e .`, then `FSDDetector.load(attribution=False)` +
+`detector.score_batch([paths])` → each result has `.is_fake` (binary real-vs-AI).
+~12s/image on a T4. Original notebook only EVALUATES; I added serving cells: a
+FastAPI app (`/health` → `{ok,model}`, `/detect {image_b64}` → `{is_fake,score}`)
+run in a daemon thread, exposed via ngrok on port 8000. The `score` field is
+best-effort (FSD may not expose a calibrated probability → null → extension uses a
+default).
 
 ## Conventions / rules
 - Keep the capabilities separate; never one merged score.

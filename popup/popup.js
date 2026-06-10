@@ -26,6 +26,9 @@ const els = {
   backendTest: document.getElementById("backendTest"),
   backendStatus: document.getElementById("backendStatus"),
   backendPremiumNote: document.getElementById("backendPremiumNote"),
+  imageBackendUrl: document.getElementById("imageBackendUrl"),
+  imageBackendTest: document.getElementById("imageBackendTest"),
+  imageBackendStatus: document.getElementById("imageBackendStatus"),
   hoverToggle: document.getElementById("hoverToggle"),
   videoMaxSeconds: document.getElementById("videoMaxSeconds"),
   upgradeCard: document.getElementById("upgradeCard"),
@@ -45,6 +48,7 @@ async function getState() {
     "verilens_filter_categories",
     "verilens_stats",
     "verilens_backend_url",
+    "verilens_image_backend_url",
     "verilens_hover_detect_enabled",
     "verilens_video_max_seconds",
   ]);
@@ -54,6 +58,7 @@ async function getState() {
     categories: o.verilens_filter_categories || { ...DEFAULT_CATEGORIES },
     stats: o.verilens_stats || {},
     backendUrl: o.verilens_backend_url || "",
+    imageBackendUrl: o.verilens_image_backend_url || "",
     hoverEnabled: o.verilens_hover_detect_enabled !== false,
     videoMaxSeconds: typeof o.verilens_video_max_seconds === "number" ? o.verilens_video_max_seconds : 20,
   };
@@ -97,6 +102,10 @@ function render(state) {
     els.backendUrl.value = state.backendUrl;
   }
   els.backendPremiumNote.hidden = isPremium;
+
+  if (document.activeElement !== els.imageBackendUrl) {
+    els.imageBackendUrl.value = state.imageBackendUrl;
+  }
 
   // Detection settings
   els.hoverToggle.checked = state.hoverEnabled;
@@ -182,6 +191,40 @@ els.backendTest.addEventListener("click", async () => {
     setBackendStatus("✗ " + String(e), "err");
   } finally {
     els.backendTest.disabled = false;
+  }
+});
+
+// ---- AI Image Detection backend (FSD) -------------------------------------
+function setImageBackendStatus(text, cls) {
+  els.imageBackendStatus.textContent = text;
+  els.imageBackendStatus.className = "vl-backend-status" + (cls ? " " + cls : "");
+}
+
+let _imgSaveTimer = null;
+els.imageBackendUrl.addEventListener("input", () => {
+  clearTimeout(_imgSaveTimer);
+  _imgSaveTimer = setTimeout(async () => {
+    await chrome.storage.local.set({ verilens_image_backend_url: els.imageBackendUrl.value.trim() });
+  }, 300);
+});
+
+els.imageBackendTest.addEventListener("click", async () => {
+  const url = els.imageBackendUrl.value.trim();
+  await chrome.storage.local.set({ verilens_image_backend_url: url });
+  if (!url) {
+    setImageBackendStatus("Enter a URL first", "err");
+    return;
+  }
+  setImageBackendStatus("Testing…", "");
+  els.imageBackendTest.disabled = true;
+  try {
+    const res = await chrome.runtime.sendMessage({ type: "PING_IMAGE_BACKEND", url });
+    if (res && res.ok) setImageBackendStatus("✓ Connected · " + shortModel(res.model), "ok");
+    else setImageBackendStatus("✗ " + ((res && res.error) || "Failed"), "err");
+  } catch (e) {
+    setImageBackendStatus("✗ " + String(e), "err");
+  } finally {
+    els.imageBackendTest.disabled = false;
   }
 });
 

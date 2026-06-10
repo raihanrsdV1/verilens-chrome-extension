@@ -87,6 +87,21 @@
       </p>
     </section>
 
+    <!-- AI Image Detection backend (Kaggle FSD via ngrok) -->
+    <section class="vl-card">
+      <div class="vl-row-title">AI Image Detection</div>
+      <div class="vl-row-desc">
+        Connect the Kaggle-hosted <strong>FSD</strong> image forensics model (exposed via ngrok)
+        to analyze images for real vs. AI. Paste the ngrok URL from the notebook.
+      </div>
+      <input id="imageBackendUrl" class="vl-input" type="text" spellcheck="false"
+             placeholder="https://xxxxx.ngrok-free.app" />
+      <div class="vl-backend-row">
+        <button id="imageBackendTest" class="vl-btn-sm">Test connection</button>
+        <span id="imageBackendStatus" class="vl-backend-status">Not connected</span>
+      </div>
+    </section>
+
     <!-- Session stats -->
     <section class="vl-card">
       <div class="vl-cat-head">This session</div>
