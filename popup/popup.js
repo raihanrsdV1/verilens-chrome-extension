@@ -35,6 +35,7 @@ const els = {
   hoverToggle: document.getElementById("hoverToggle"),
   upgradePromoCard: document.getElementById("upgradePromoCard"),
   btnViewDashboard: document.getElementById("btnViewDashboard"),
+  btnLogout: document.getElementById("btnLogout"),
   
   // Settings Elements
   tierBadge: document.getElementById("tierBadge"),
@@ -146,6 +147,11 @@ els.btnBack.addEventListener("click", () => {
 
 els.btnViewDashboard.addEventListener("click", () => {
   chrome.tabs.create({ url: WEBSITE_URL });
+});
+
+els.btnLogout.addEventListener("click", async () => {
+  await chrome.storage.local.clear();
+  window.close();
 });
 
 // ---- Wiring Toggles --------------------------------------------------------

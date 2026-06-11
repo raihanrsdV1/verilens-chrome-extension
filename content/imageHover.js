@@ -296,3 +296,19 @@
   document.addEventListener("mouseover", onMouseOver, true);
   document.addEventListener("mouseout", onMouseOut, true);
 })();
+    
+    if (badge && badge.contains(related)) return;
+
+    if (e.clientX >= r.left && e.clientX <= r.right &&
+        e.clientY >= r.top && e.clientY <= r.bottom) {
+      return; 
+    }
+
+    clearTimeout(detectTimer);
+    leaveTimer = setTimeout(destroyBadge, 250);
+  }
+
+  // Capture phase so we see events inside React's synthetic event system
+  document.addEventListener("mouseover", onMouseOver, true);
+  document.addEventListener("mouseout", onMouseOut, true);
+})();
