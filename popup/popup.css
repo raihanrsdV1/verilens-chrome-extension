@@ -1,86 +1,196 @@
-/* popup/popup.css — dark, minimal, launch-quality */
+/* popup/popup.css — dark, minimal, premium */
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  width: 320px;
+  width: 400px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: #0e0f12;
   color: #e7e9ea;
   font-size: 13px;
 }
 
+/* Icons and Basic Buttons */
+.vl-icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: #8b98a5;
+  transition: background 0.2s;
+}
+.vl-icon-btn:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+
 /* Header */
 .vl-header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
   padding: 14px 16px;
   border-bottom: 1px solid #2f3336;
-  background: linear-gradient(180deg, rgba(29,155,240,0.06) 0%, transparent 100%);
+  position: relative;
 }
-.vl-logo { font-size: 20px; }
-.vl-title { font-size: 15px; font-weight: 700; }
-.vl-subtitle { font-size: 11px; color: #8b98a5; }
+.vl-header-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.vl-logo-small {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.vl-header-title { font-size: 15px; font-weight: 800; letter-spacing: 0.5px; }
+
 .vl-tier {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #8b98a5;
   border: 1px solid #2f3336;
   border-radius: 999px;
-  padding: 2px 9px;
+  padding: 2px 8px;
 }
 .vl-tier.premium { color: #1d9bf0; border-color: rgba(29, 155, 240, 0.5); }
 
-/* Tabs */
-.vl-tabs {
-  display: flex;
-  gap: 6px;
-  padding: 10px 12px 0;
+/* Views */
+.vl-view {
+  animation: fadeIn 0.2s ease-out;
 }
-.vl-tab {
-  flex: 1;
-  appearance: none;
-  border: 1px solid #2f3336;
-  background: #16181c;
-  color: #8b98a5;
-  font-size: 12.5px;
-  font-weight: 700;
-  padding: 7px 0;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-.vl-tab:hover { color: #c4c9ce; border-color: #3a3f44; }
-.vl-tab.active {
-  color: #fff;
-  background: #1d9bf0;
-  border-color: #1d9bf0;
-}
-.vl-help-text {
-  font-size: 12.5px;
-  color: #c4c9ce;
-  line-height: 1.5;
-  margin: 8px 0 0;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* Cards */
-.vl-card {
-  margin: 12px;
-  padding: 12px 14px;
+/* Main Dashboard Elements */
+.vl-power-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px;
+  border-bottom: 1px solid #1a1c20;
+}
+
+.vl-power-btn {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid #2f3336;
+  color: #8b98a5;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+.vl-power-btn:hover {
+  border-color: #5b6570;
+  color: #c4c9ce;
+}
+
+.vl-power-btn.active {
+  border-color: #1d9bf0;
+  color: #1d9bf0;
+  box-shadow: 0 0 25px rgba(29, 155, 240, 0.3), inset 0 0 15px rgba(29, 155, 240, 0.1);
+}
+
+.vl-power-status {
+  margin-top: 24px;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.vl-power-desc {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #8b98a5;
+}
+
+.vl-card-sleek {
+  margin: 16px;
+  padding: 16px;
   border: 1px solid #2f3336;
   border-radius: 12px;
   background: #16181c;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
+
+.vl-badge-new {
+  background: #0f4e78;
+  color: #55acee;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-right: 6px;
+  text-transform: uppercase;
+}
+
+.vl-promo-title {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.vl-promo-desc {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #8b98a5;
+}
+
+.vl-dashboard-btn-container {
+  padding: 0 16px 20px 16px;
+}
+
+.vl-card-btn {
+  width: 100%;
+  background: #16181c;
+  border: 1px solid #2f3336;
+  border-radius: 12px;
+  padding: 14px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.vl-card-btn:hover {
+  background: #1c1e23;
+  border-color: #3a3f44;
+}
+
+/* Shared Elements (Cards, Toggles, Settings) */
+.vl-card {
+  margin: 12px 16px;
+  padding: 14px 16px;
+  border: 1px solid #2f3336;
+  border-radius: 12px;
+  background: #16181c;
+}
+
 .vl-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
 }
+
 .vl-row-title { font-size: 13.5px; font-weight: 700; }
 .vl-row-desc { font-size: 11.5px; color: #8b98a5; margin-top: 2px; }
 
@@ -109,8 +219,32 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 8px 12px;
 }
-.vl-check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-.vl-check input { accent-color: #1d9bf0; width: 15px; height: 15px; }
+.vl-check { display: flex; align-items: center; gap: 10px; cursor: pointer; position: relative; }
+.vl-check input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
+.vl-custom-check {
+  width: 18px;
+  height: 18px;
+  background: #16181c;
+  border: 1.5px solid #3a3f44;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+.vl-custom-check svg {
+  width: 14px;
+  height: 14px;
+  color: #fff;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.vl-check:hover input ~ .vl-custom-check { border-color: #5b6570; }
+.vl-check input:checked ~ .vl-custom-check { background: #1d9bf0; border-color: #1d9bf0; }
+.vl-check input:checked ~ .vl-custom-check svg { opacity: 1; transform: scale(1); }
+.vl-check-text { font-size: 13.5px; color: #e7e9ea; font-weight: 500; }
 .vl-disabled { opacity: 0.45; pointer-events: none; }
 
 /* Toggle switch */
@@ -138,20 +272,25 @@ body {
 .vl-switch input:checked + .vl-slider::before { transform: translateX(18px); }
 .vl-switch input:disabled + .vl-slider { opacity: 0.5; }
 
-/* Detection settings */
-.vl-subsection { margin-top: 14px; }
-.vl-select {
-  width: 100%;
-  margin-top: 8px;
-  padding: 7px 10px;
+/* Detection settings & Chips */
+.vl-subsection { margin-top: 0; }
+.vl-row-icon { width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; color: #8b98a5; }
+.vl-chips { display: flex; gap: 6px; margin-top: 12px; }
+.vl-chip { cursor: pointer; position: relative; flex: 1; text-align: center; }
+.vl-chip input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
+.vl-chip span {
+  display: block;
+  padding: 6px 0;
   font-size: 12.5px;
-  color: #e7e9ea;
+  font-weight: 700;
+  color: #8b98a5;
   background: #0e0f12;
   border: 1px solid #2f3336;
-  border-radius: 8px;
-  outline: none;
+  border-radius: 6px;
+  transition: all 0.2s ease;
 }
-.vl-select:focus { border-color: #1d9bf0; }
+.vl-chip:hover input:not(:checked) ~ span { border-color: #5b6570; color: #c4c9ce; }
+.vl-chip input:checked ~ span { background: rgba(29, 155, 240, 0.1); color: #1d9bf0; border-color: #1d9bf0; }
 
 /* Session stats */
 .vl-stats {
@@ -169,65 +308,9 @@ body {
 .vl-stat-num { font-size: 18px; font-weight: 800; color: #e7e9ea; }
 .vl-stat-label { font-size: 9.5px; color: #8b98a5; text-align: center; }
 
-/* Upgrade card */
-.vl-upgrade { border-color: rgba(29, 155, 240, 0.4); background: rgba(29, 155, 240, 0.06); }
-.vl-upgrade-head { font-size: 14px; font-weight: 800; margin-bottom: 8px; }
-.vl-benefits {
-  list-style: none;
-  margin: 0 0 12px;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.vl-benefits li {
-  font-size: 12.5px;
-  color: #c4c9ce;
-  padding-left: 18px;
-  position: relative;
-}
-.vl-benefits li::before {
-  content: "✓";
-  position: absolute;
-  left: 0;
-  color: #1d9bf0;
-  font-weight: 800;
-}
-.vl-cta {
-  width: 100%;
-  appearance: none;
-  border: none;
-  background: #1d9bf0;
-  color: #fff;
-  font-size: 13.5px;
-  font-weight: 700;
-  padding: 9px;
-  border-radius: 999px;
-  cursor: pointer;
-}
-.vl-cta:hover { background: #1a8cd8; }
-
-.vl-premium-active { border-color: rgba(46, 204, 113, 0.4); background: rgba(46, 204, 113, 0.06); }
-.vl-premium-head { font-size: 14px; font-weight: 800; color: #2ecc71; margin-bottom: 2px; }
-
-/* Dev card (collapsible) */
-.vl-dev { border-style: dashed; }
-.vl-dev-summary {
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 700;
-  color: #8b98a5;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  list-style: none;
-}
-.vl-dev-summary::-webkit-details-marker { display: none; }
-.vl-dev-summary::before { content: "▸ "; }
-details[open] .vl-dev-summary::before { content: "▾ "; }
-.vl-dev > .vl-row { margin-top: 12px; }
 .vl-dev-link {
   display: block;
-  margin-top: 10px;
+  margin-top: 16px;
   appearance: none;
   border: none;
   background: none;
@@ -238,191 +321,3 @@ details[open] .vl-dev-summary::before { content: "▾ "; }
   padding: 0;
 }
 .vl-dev-link:hover { color: #aab4bd; }
-
-/* Developer diagnostics */
-.vl-dev-section { margin-top: 14px; }
-.vl-dev-head {
-  font-size: 10.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: #8b98a5;
-  margin-bottom: 8px;
-}
-.vl-api-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 0;
-  font-size: 11.5px;
-}
-.vl-dot-sm {
-  width: 8px;
-  height: 8px;
-  min-width: 8px;
-  border-radius: 50%;
-  background: #3a3f44;
-}
-.vl-dot-sm.green { background: #2ecc71; }
-.vl-dot-sm.amber { background: #f39c12; }
-.vl-dot-sm.red { background: #e74c3c; }
-.vl-api-name { color: #c4c9ce; flex: 1; }
-.vl-api-state { color: #8b98a5; font-size: 11px; }
-.vl-ping-btn {
-  appearance: none;
-  border: 1px solid #2f3336;
-  background: #0e0f12;
-  color: #8b98a5;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
-}
-.vl-ping-btn:hover { border-color: #1d9bf0; color: #1d9bf0; }
-
-.vl-dev-input {
-  width: 100%;
-  margin-top: 6px;
-  padding: 7px 10px;
-  font-size: 12px;
-  font-family: inherit;
-  color: #e7e9ea;
-  background: #0e0f12;
-  border: 1px solid #2f3336;
-  border-radius: 8px;
-  resize: vertical;
-  outline: none;
-}
-.vl-dev-input:focus { border-color: #1d9bf0; }
-
-.vl-dev-btn {
-  width: 100%;
-  margin-top: 8px;
-  appearance: none;
-  border: 1px solid #1d9bf0;
-  background: rgba(29, 155, 240, 0.12);
-  color: #1d9bf0;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 7px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-.vl-dev-btn:hover { background: rgba(29, 155, 240, 0.22); }
-.vl-dev-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-
-.vl-dev-result {
-  margin-top: 8px;
-  padding: 8px 10px;
-  background: #0e0f12;
-  border: 1px solid #2f3336;
-  border-radius: 8px;
-  font-family: "SF Mono", "Menlo", "Monaco", monospace;
-  font-size: 10.5px;
-  color: #c4c9ce;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-  text-align: center;
-  font-size: 10.5px;
-  color: #5b6570;
-  padding: 8px 0 12px;
-}
-
-/* ---- Help tab ---- */
-.vl-legend { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
-.vl-legend-row { font-size: 12.5px; color: #c4c9ce; display: flex; align-items: flex-start; gap: 8px; }
-.vl-dot {
-  width: 10px;
-  height: 10px;
-  min-width: 10px;
-  border-radius: 50%;
-  margin-top: 3px;
-}
-.vl-dot.green { background: #2ecc71; }
-.vl-dot.amber { background: #f39c12; }
-.vl-dot.red { background: #e74c3c; }
-
-.vl-plan-grid {
-  margin-top: 10px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.vl-plan-col {
-  border: 1px solid #2f3336;
-  border-radius: 10px;
-  padding: 10px;
-  background: #0e0f12;
-}
-.vl-plan-head {
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #8b98a5;
-  margin-bottom: 6px;
-}
-.vl-plan-list {
-  margin: 0;
-  padding-left: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.vl-plan-list li { font-size: 12px; color: #c4c9ce; }
-
-/* History tab */
-.vl-history-empty {
-  padding: 24px 20px;
-  text-align: center;
-  font-size: 12px;
-  color: #8b98a5;
-  line-height: 1.5;
-}
-.vl-history-item {
-  padding: 10px 14px;
-  border-bottom: 1px solid #1c1e22;
-}
-.vl-history-item:last-child { border-bottom: none; }
-.vl-history-meta {
-  font-size: 10.5px;
-  color: #8b98a5;
-  margin-bottom: 4px;
-}
-.vl-history-overall.green { color: #2ecc71; }
-.vl-history-overall.amber { color: #f39c12; }
-.vl-history-overall.red { color: #e74c3c; }
-.vl-history-overall.grey { color: #8b98a5; }
-.vl-history-overall { font-weight: 700; }
-.vl-history-caption {
-  font-size: 12px;
-  color: #c4c9ce;
-  margin-bottom: 4px;
-  line-height: 1.4;
-}
-.vl-history-claims {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 6px;
-}
-.vl-history-claim {
-  font-size: 10.5px;
-  color: #aab4bd;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-.vl-history-error {
-  font-size: 10.5px;
-  color: #e74c3c;
-  margin-top: 2px;
-  font-weight: 600;
-}

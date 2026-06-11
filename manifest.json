@@ -14,14 +14,20 @@
     "https://www.facebook.com/*",
     "https://facebook.com/*",
     "https://*.fbcdn.net/*",
-    "https://verilens-claim-extractor.vercel.app/*",
-    "https://fact-verifier.vercel.app/*",
     "https://video.twimg.com/*",
     "https://*.ngrok-free.app/*",
     "https://*.ngrok.app/*",
     "https://*.ngrok-free.dev/*",
-    "https://*.ngrok.io/*"
+    "https://*.ngrok.io/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
   ],
+  "icons": {
+    "16":  "assets/images/icon16.png",
+    "32":  "assets/images/icon32.png",
+    "48":  "assets/images/icon48.png",
+    "128": "assets/images/icon128.png"
+  },
   "background": {
     "service_worker": "service-worker.js"
   },
@@ -46,16 +52,21 @@
         "content/filter.js",
         "content/content.js",
         "content/textSelection.js",
-        "content/imageHover.js",
-        "content/videoFrameExtractor.js"
+        "content/imageHover.js"
       ],
+      "run_at": "document_idle",
+      "all_frames": false
+    },
+    {
+      "matches": ["http://localhost/*", "http://127.0.0.1/*"],
+      "js": ["content/purchaseUnlock.js"],
       "run_at": "document_idle",
       "all_frames": false
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["content/styles.css", "content/videoFrameExtractor.js"],
+      "resources": ["content/styles.css", "assets/images/*"],
       "matches": [
         "https://x.com/*",
         "https://twitter.com/*",
@@ -66,6 +77,12 @@
   ],
   "action": {
     "default_title": "Verilens",
-    "default_popup": "popup/popup.html"
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16":  "assets/images/icon16.png",
+      "32":  "assets/images/icon32.png",
+      "48":  "assets/images/icon48.png",
+      "128": "assets/images/icon128.png"
+    }
   }
 }
