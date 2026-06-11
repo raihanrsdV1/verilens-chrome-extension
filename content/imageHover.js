@@ -37,13 +37,9 @@
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
-  // Returns the canonical media element to use as the badge anchor:
-  //   - the <img> itself (if large enough and not an avatar)
-  //   - the <video> itself (if large enough)
-  //   - the nearest large-enough ancestor that CONTAINS a <video> (if the
-  //     hovered element is an overlay div sitting on top of the player)
-  //   - null otherwise
-  function findMediaTarget(hovered) {
+  // Returns the canonical media element to use as the badge anchor.
+  // Accepts the mouse event so we can do a precise coordinate check for videos.
+  function findMediaTarget(hovered, e) {
     // 1. Direct <img> hit
     if (hovered.tagName === "IMG") {
       const src = hovered.src || "";
@@ -52,22 +48,31 @@
       return (r.width >= 100 && r.height >= 100) ? hovered : null;
     }
 
-    // 2. Direct <video> hit
+    // 2. Direct <video> hit — cursor is definitively on the video element
     if (hovered.tagName === "VIDEO") {
       const r = hovered.getBoundingClientRect();
       return (r.width >= 100 && r.height >= 100) ? hovered : null;
     }
 
     // 3. Walk up the DOM looking for an ancestor that CONTAINS a <video>.
-    //    Every platform (X, Instagram, Facebook) renders overlay <div>s
-    //    (controls, play button, gradients) on top of the <video> tag, so
-    //    the hovered element is rarely the <video> itself.
+    //    Platforms (X, Instagram, Facebook) render overlay <div>s (controls,
+    //    play button, gradients) on top of the <video> tag, so the hovered
+    //    element is rarely the <video> itself.
+    //    We use the mouse coordinates to verify the cursor is actually INSIDE
+    //    the video's visual rectangle, preventing false positives on surrounding
+    //    tweet text that also happens to be in a post with a video.
     let node = hovered;
     for (let depth = 0; node && depth < 6; depth++) {
       const video = node.querySelector && node.querySelector("video");
       if (video) {
-        const r = node.getBoundingClientRect();
-        if (r.width >= 100 && r.height >= 100) return node;
+        const vr = video.getBoundingClientRect();
+        if (vr.width >= 100 && vr.height >= 100) {
+          // Cursor must be physically inside the video's visual bounds
+          if (e && e.clientX >= vr.left && e.clientX <= vr.right &&
+              e.clientY >= vr.top  && e.clientY <= vr.bottom) {
+            return node;
+          }
+        }
       }
       node = node.parentElement;
     }
@@ -82,11 +87,20 @@
     return !!el.querySelector("video");
   }
 
+  // Get the actual video element for coordinate/positioning purposes
+  function getVideoEl(el) {
+    if (el.tagName === "VIDEO") return el;
+    return el.querySelector("video") || el;
+  }
+
   function getCornerPos(el) {
-    const r = el.getBoundingClientRect();
+    // Anchor the badge to the actual video element's corner, not the wrapper div,
+    // so it sticks precisely to the media on scroll.
+    const anchor = getVideoEl(el);
+    const r = anchor.getBoundingClientRect();
     return {
-      top: r.top + 10,
-      right: window.innerWidth - r.right + 10,
+      top:  r.top  + window.scrollY + 10,
+      left: r.right + window.scrollX - 10,
     };
   }
 
@@ -100,12 +114,13 @@
 
   function createBadge(el) {
     destroyBadge();
-    const { top, right } = getCornerPos(el);
+    const { top, left } = getCornerPos(el);
     const b = document.createElement("div");
     b.style.cssText =
-      "position:fixed;" +
+      "position:absolute;" +
       "top:" + top + "px;" +
-      "right:" + right + "px;" +
+      "left:" + left + "px;" +
+      "transform:translateX(-100%);" +
       "z-index:2147483647;" +
       "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;" +
       "background:rgba(14,15,18,0.92);" +
@@ -133,7 +148,7 @@
       '<div style="display:flex;align-items:center;gap:8px;font-weight:700">' +
       "<span>🔍</span><span>Detecting...</span></div>" +
       (isVid
-        ? '<div style="margin-top:5px;font-size:11px;color:#8b98a5">Sampling frames at 24fps</div>' +
+        ? '<div style="margin-top:5px;font-size:11px;color:#8b98a5">Sampling frames at 2fps</div>' +
           '<div style="margin-top:5px;height:3px;background:#2f3336;border-radius:2px;overflow:hidden">' +
           '<div id="vl-pbar" style="height:100%;width:0%;background:#1d9bf0;border-radius:2px;' +
           'transition:width 0.6s ease"></div></div>'
@@ -155,9 +170,9 @@
     if (!badge || badgeTarget !== el) return;
 
     // Reposition in case of scroll
-    const { top, right } = getCornerPos(el);
+    const { top, left } = getCornerPos(el);
     badge.style.top = top + "px";
-    badge.style.right = right + "px";
+    badge.style.left = left + "px";
     badge.style.pointerEvents = "auto";
 
     if (result.gated) {
@@ -230,8 +245,7 @@
       hasAudio: false,
     };
 
-    // For videos, hand the real VideoVeritas backend the bytes/URL it needs. blob:
-    // srcs are captured here; https srcs are passed for the worker to fetch.
+    // For videos, hand the real VideoVeritas backend the bytes/URL it needs.
     if (isVid && window.VerilensVideoCapture) {
       payload.videoUrl = src;
       const extra = await window.VerilensVideoCapture.prepare(src);
@@ -256,7 +270,7 @@
 
   function onMouseOver(e) {
     if (!hoverEnabled) return;
-    const target = findMediaTarget(e.target);
+    const target = findMediaTarget(e.target, e);
     if (!target) return;
     clearTimeout(leaveTimer);
 
@@ -277,18 +291,26 @@
   }
 
   function onMouseOut(e) {
-    // For video containers, check if we're leaving the container itself.
-    // For regular elements, check the direct target.
     if (!badgeTarget) return;
-    const leaving = e.target;
-    // If mouse moves to a child of badgeTarget (e.g. overlay div inside player), ignore.
-    if (badgeTarget.contains(leaving) && badgeTarget !== leaving) return;
-    // If mouse moves OUT of the badgeTarget (or out of a child that IS the badgeTarget)
-    const related = e.relatedTarget;
-    if (related && badgeTarget.contains(related)) return;
-    clearTimeout(detectTimer);
 
-    // Short grace period — prevents flickering
+    // Check if the cursor is still physically inside the video's visual bounds.
+    // This handles overlaid divs (controls, gradients) correctly — the badge
+    // only disappears when the mouse has genuinely left the video rectangle.
+    const anchor = getVideoEl(badgeTarget);
+    const r = anchor.getBoundingClientRect();
+
+    // Don't dismiss if moving into the badge itself
+    const related = e.relatedTarget;
+    if (badge && badge.contains(related)) return;
+
+    // Don't dismiss if cursor is still inside the media bounds
+    if (e.clientX >= r.left && e.clientX <= r.right &&
+        e.clientY >= r.top  && e.clientY <= r.bottom) {
+      return;
+    }
+
+    clearTimeout(detectTimer);
+    // Short grace period — prevents flickering during micro mouse movements
     leaveTimer = setTimeout(destroyBadge, 250);
   }
 
@@ -310,20 +332,4 @@
   } else {
     attach();
   }
-})();
-    
-    if (badge && badge.contains(related)) return;
-
-    if (e.clientX >= r.left && e.clientX <= r.right &&
-        e.clientY >= r.top && e.clientY <= r.bottom) {
-      return; 
-    }
-
-    clearTimeout(detectTimer);
-    leaveTimer = setTimeout(destroyBadge, 250);
-  }
-
-  // Capture phase so we see events inside React's synthetic event system
-  document.addEventListener("mouseover", onMouseOver, true);
-  document.addEventListener("mouseout", onMouseOut, true);
 })();
