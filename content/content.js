@@ -110,11 +110,11 @@
   function disableExtension() {
     isEnabled = false;
     observer.disconnect();
-    
+
     // Clean up injected UI
     document.querySelectorAll('.verilens-host').forEach(el => el.remove());
     document.querySelectorAll('.verilens-filter-host').forEach(el => el.remove());
-    
+
     // Reset dataset so posts can be rescanned if re-enabled
     document.querySelectorAll('[data-verilens]').forEach(el => {
       delete el.dataset.verilens;

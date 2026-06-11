@@ -466,7 +466,7 @@ async function handleClassify(payload) {
     const byId = new Map(fresh.map((r) => [r.postId, r]));
 
     // LOCAL C2PA on the filter path: it's free and instant (no API), so we run
-    // it on every post here. A signed credential is a definitive "ai_generated"
+    // it on every post here. A signed credential is a definitive "ai_media"
     // signal — add the label even if the cheap classifier missed it.
     await Promise.all(
       toClassify.map(async (p) => {
@@ -474,7 +474,7 @@ async function handleClassify(payload) {
         if (!r) return;
         const prov = await Provenance.check(p);
         if (prov.state === "present" && prov.standard === "c2pa") {
-          if (!r.labels.includes("ai_generated")) r.labels.push("ai_generated");
+          if (!r.labels.includes("ai_media")) r.labels.push("ai_media");
           r.provenance = "c2pa"; // mark the source so the filter can show "Confirmed"
         }
       })
@@ -612,8 +612,8 @@ chrome.runtime.onInstalled.addListener(async () => {
   if (o.verilens_filter_categories === undefined) {
     seed.verilens_filter_categories = {
       political: true,
-      ai_meme: true,
-      ai_generated: true,
+      ai_media: true,
+      sensitive: true,
       misinformation: true,
     };
   }

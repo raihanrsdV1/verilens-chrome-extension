@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verilens — Docs, Pitch & Live System</title>
+  <meta name="description" content="Verilens /docs — live pitch deck, technical whitepaper, and system dashboard." />
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="docs.css" />
+  <script src="../config.js"></script>
+  <script src="content.js"></script>
+</head>
+<body class="docs-body">
+
+  <!-- ===== GATE: shown when access is OFF / outside schedule ===== -->
+  <div id="gateScreen" class="docs-gate" hidden>
+    <div class="docs-gate-card">
+      <svg class="docs-gate-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </svg>
+      <h1 id="gateTitle">Not Available</h1>
+      <p id="gateMsg" class="docs-gate-msg"></p>
+      <a class="btn btn-ghost" href="../index.html">← Back to Verilens</a>
+    </div>
+  </div>
+
+  <!-- ===== DOCS APP (shown when access is ON) ===== -->
+  <div id="docsApp" class="docs-app" hidden>
+
+    <!-- Top bar -->
+    <header class="docs-topbar">
+      <button id="navToggle" class="docs-burger" aria-label="Toggle navigation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <a class="docs-brand" href="#problem">
+        <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.4 8 11 4.6-2.6 8-6 8-11V5l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+        <span class="brand-name" id="brandName">Verilens</span>
+        <span class="docs-chip">/docs</span>
+      </a>
+      <div class="docs-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="searchInput" type="search" placeholder="Search docs…  (press /)" autocomplete="off" />
+        <div id="searchResults" class="docs-search-results" hidden></div>
+      </div>
+      <div class="docs-topbar-actions">
+        <button id="exportMd" class="docs-mini-btn" title="Download Markdown">MD</button>
+        <button id="exportPdf" class="docs-mini-btn" title="Print / Save as PDF">PDF</button>
+        <button id="shareLink" class="docs-mini-btn" title="Copy shareable link">Share</button>
+        <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme" title="Toggle light / dark"></button>
+      </div>
+    </header>
+
+    <!-- Body: sidebar TOC + content -->
+    <div class="docs-layout">
+      <aside id="docsSidebar" class="docs-sidebar">
+        <nav id="tocNav" class="docs-toc"><!-- built by docs.js --></nav>
+      </aside>
+
+      <main class="docs-main" id="docsMain">
+        <!-- Hero / live status strip -->
+        <section class="docs-hero" id="top">
+          <span class="pill" id="heroPill">Live Pitch Deck · Technical Whitepaper · System Dashboard</span>
+          <h1 class="docs-hero-title" id="heroTitle">Verilens</h1>
+          <p class="docs-hero-sub" id="heroSub"></p>
+          <div class="docs-status-grid" id="statusGrid"><!-- live status cards --></div>
+        </section>
+
+        <div id="sectionsRoot"><!-- all sections injected by docs.js --></div>
+
+        <footer class="docs-foot">
+          <span id="footMeta"></span>
+          <a href="admin.html" class="docs-foot-admin">Admin →</a>
+        </footer>
+      </main>
+    </div>
+  </div>
+
+  <!-- Mermaid is lazy-loaded by docs.js only when a diagram section renders. -->
+  <script src="docs.js"></script>
+</body>
+</html>

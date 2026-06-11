@@ -141,18 +141,23 @@ image/video.
 - Fact-check res: `{postId, cached, claims:[{claim,verdict,confidence,sources[]}], overall,
   explanation}`.
 - Classify res: `{results:[{postId, labels[], confidence, provenance?}]}`. labels:
-  political/ai_meme/ai_generated/misinformation.
+  political/ai_media/sensitive/misinformation.
 - detect-text res: `{textHash, cached, aiGenerated, band, verdict, explanation}`.
 - Gated short-circuit: `{gated:true, feature, message}`.
 
 ## Storage keys (chrome.storage.local)
 - `verilens_tier` "free"|"premium" (default free)
 - `verilens_autofilter_enabled` bool (default false)
-- `verilens_filter_categories` {political,ai_meme,ai_generated,misinformation}
+- `verilens_filter_categories` {political,ai_media,sensitive,misinformation}
 - `verilens_stats` {deepfakeScans, factCheckScans, confirmedAI, filteredPosts, detectTextScans}
 - `verilens_cache` LRU mirror
 - `verilens_hover_detect_enabled` (added) bool, **default false** — master switch for
   the imageHover.js automatic hover-scan badge.
+- `verilens_scanning_enabled` (added) bool, default true (treated as enabled unless
+  explicitly `false`) — global "ENABLE SCANNING" power switch in the popup. Read
+  ONCE at content-script injection time by content.js, imageHover.js, and
+  textSelection.js; if `false`, that page load attaches no buttons, hover badges,
+  filter, or text-selection button. Toggling takes effect on the next page refresh.
 
 > Backend ngrok URLs are NOT in chrome.storage — see "Config file" above
 > (`lib/config.local.js`).
