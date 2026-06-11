@@ -10,6 +10,15 @@
 
 .docs-body { background: var(--bg); color: var(--text); }
 
+/* ===== Scrollbar (match dark/light theme instead of the OS default) ===== */
+.docs-body { scrollbar-color: var(--border) var(--bg); scrollbar-width: thin; }
+.docs-body ::-webkit-scrollbar { width: 12px; height: 12px; }
+.docs-body ::-webkit-scrollbar-track { background: var(--bg); }
+.docs-body ::-webkit-scrollbar-thumb {
+  background: var(--border); border-radius: 8px; border: 3px solid var(--bg);
+}
+.docs-body ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
 /* ===== Access gate / 403 ===== */
 .docs-gate { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
 .docs-gate-card {

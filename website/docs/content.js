@@ -146,9 +146,9 @@ window.VerilensDocs = {
         photo: "",
       },
       {
-        name: "SMAM Mahdi",
+        name: "Shah Mohammad Abdul Mannan",
         role: "Backend / Fact-Check APIs",
-        email: "mahdithe8@gmail.com",
+        email: "2105056@ugrad.cse.buet.ac.bd",
         photo: "",
       },
       {
@@ -166,7 +166,7 @@ window.VerilensDocs = {
       {
         name: "Dipit Saha",
         role: "Product / Platform Adapters",
-        email: "",
+        email: "2105050@ugrad.cse.buet.ac.bd",
         photo: "",
       },
     ],
