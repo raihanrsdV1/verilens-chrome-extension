@@ -50,13 +50,14 @@
     if (!alive()) return DEAD_STATE;
     try {
       const o = await chrome.storage.local.get([
+        "verilens_scanning_enabled",
         "verilens_tier",
         "verilens_autofilter_enabled",
         "verilens_filter_categories",
       ]);
       return {
         tier: o.verilens_tier || "free",
-        enabled: !!o.verilens_autofilter_enabled,
+        enabled: o.verilens_scanning_enabled !== false && !!o.verilens_autofilter_enabled,
         categories: o.verilens_filter_categories || {},
       };
     } catch (e) {
@@ -303,6 +304,7 @@
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area !== "local") return;
       if (
+        changes.verilens_scanning_enabled ||
         changes.verilens_tier ||
         changes.verilens_autofilter_enabled ||
         changes.verilens_filter_categories

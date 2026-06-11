@@ -25,10 +25,19 @@
 }
 
 .verilens-brand {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.2px;
   color: #8b98a5;
+}
+.verilens-brand-logo {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .verilens-btn {

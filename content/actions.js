@@ -304,7 +304,16 @@
     if (mount.querySelector(".verilens-bar")) return; // already attached
 
     const bar = el("div", "verilens-bar");
-    bar.append(el("span", "verilens-brand", "🛡 Verilens"));
+    const brandSpan = el("span", "verilens-brand");
+    if (alive()) {
+      const brandLogo = document.createElement("img");
+      brandLogo.className = "verilens-brand-logo";
+      brandLogo.src = chrome.runtime.getURL("assets/images/logo.png");
+      brandLogo.alt = "";
+      brandSpan.append(brandLogo);
+    }
+    brandSpan.append(document.createTextNode(" Verilens"));
+    bar.append(brandSpan);
 
     let checkBtn = null;
     let factBtn = null;
