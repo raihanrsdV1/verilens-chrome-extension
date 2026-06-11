@@ -133,7 +133,7 @@
     const row = el("div", "verilens-verdict-row " + band);
     row.append(el("span", "verilens-dot"));
     const labels = { green: "Likely human", amber: "Mixed signals", red: "Likely AI-written" };
-    row.append(el("span", "verilens-verdict-label", labels[band] || "Unknown"));
+    row.append(el("span", "verilens-verdict-label", res.label || labels[band] || "Unknown"));
     if (res && typeof res.aiGenerated === "number") {
       row.append(el("span", "verilens-prob", Math.round(res.aiGenerated * 100) + "% AI"));
     }

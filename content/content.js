@@ -91,31 +91,63 @@
     return false;
   }
 
+  let isEnabled = true;
+
   // X is a single-page app that streams posts in as you scroll, so we watch the
   // DOM and re-scan. (Button injection only — no network.)
   const observer = new MutationObserver((mutations) => {
+    if (!isEnabled) return;
     if (addsArticles(mutations)) debouncedScan();
   });
 
-  function start() {
+  function enableExtension() {
+    if (!alive()) return;
+    isEnabled = true;
     observer.observe(document.body, { childList: true, subtree: true });
-
     scan(); // initial pass for whatever's already on screen
-
-    // Start the AUTOMATIC content filter (premium). It self-gates on tier +
-    // settings and runs its OWN observer; for free users it stays dormant.
-    if (window.VerilensFilter) {
-      window.VerilensFilter.init(adapter);
-    }
   }
 
-  // Master switch (verilens_scanning_enabled, default true). Read once at
-  // injection time — if OFF, this page load attaches nothing. Toggling the
-  // switch back on takes effect after a refresh.
-  chrome.storage.local
-    .get("verilens_scanning_enabled")
-    .then((o) => {
-      if (o.verilens_scanning_enabled !== false) start();
-    })
-    .catch(start);
+  function disableExtension() {
+    isEnabled = false;
+    observer.disconnect();
+
+    // Clean up injected UI
+    document.querySelectorAll('.verilens-host').forEach(el => el.remove());
+    document.querySelectorAll('.verilens-filter-host').forEach(el => el.remove());
+
+    // Reset dataset so posts can be rescanned if re-enabled
+    document.querySelectorAll('[data-verilens]').forEach(el => {
+      delete el.dataset.verilens;
+      delete el.__verilensMount;
+    });
+    document.querySelectorAll('[data-verilens-filter]').forEach(el => {
+      delete el.dataset.verilensFilter;
+    });
+  }
+
+  // Check initial state
+  chrome.storage.local.get(["verilens_scanning_enabled"], (o) => {
+    if (o.verilens_scanning_enabled === false) {
+      disableExtension();
+    } else {
+      enableExtension();
+    }
+  });
+
+  // Listen for toggles
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes.verilens_scanning_enabled) {
+      if (changes.verilens_scanning_enabled.newValue === false) {
+        disableExtension();
+      } else {
+        enableExtension();
+      }
+    }
+  });
+
+  // Start the AUTOMATIC content filter (premium). It self-gates on tier +
+  // settings and runs its OWN observer; for free users it stays dormant.
+  if (window.VerilensFilter) {
+    window.VerilensFilter.init(adapter);
+  }
 })();

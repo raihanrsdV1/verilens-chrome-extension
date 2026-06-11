@@ -304,7 +304,7 @@
     if (mount.querySelector(".verilens-bar")) return; // already attached
 
     const bar = el("div", "verilens-bar");
-    bar.append(el("span", "verilens-brand", "🛡 Verilens"));
+    bar.append(el("span", "verilens-brand", "Verilens"));
 
     let checkBtn = null;
     let factBtn = null;
