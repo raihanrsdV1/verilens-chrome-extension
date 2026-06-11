@@ -215,8 +215,32 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 8px 12px;
 }
-.vl-check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-.vl-check input { accent-color: #1d9bf0; width: 15px; height: 15px; }
+.vl-check { display: flex; align-items: center; gap: 10px; cursor: pointer; position: relative; }
+.vl-check input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
+.vl-custom-check {
+  width: 18px;
+  height: 18px;
+  background: #16181c;
+  border: 1.5px solid #3a3f44;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+.vl-custom-check svg {
+  width: 14px;
+  height: 14px;
+  color: #fff;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.vl-check:hover input ~ .vl-custom-check { border-color: #5b6570; }
+.vl-check input:checked ~ .vl-custom-check { background: #1d9bf0; border-color: #1d9bf0; }
+.vl-check input:checked ~ .vl-custom-check svg { opacity: 1; transform: scale(1); }
+.vl-check-text { font-size: 13.5px; color: #e7e9ea; font-weight: 500; }
 .vl-disabled { opacity: 0.45; pointer-events: none; }
 
 /* Toggle switch */

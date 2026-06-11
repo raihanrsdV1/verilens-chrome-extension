@@ -6,15 +6,15 @@
 //   verilens_scanning_enabled     boolean (master switch for ALL extension activity)
 //   verilens_tier                 "free" | "premium"
 //   verilens_autofilter_enabled   boolean (master switch for auto-hiding posts)
-//   verilens_filter_categories    { political, ai_meme, ai_generated, misinformation }
+//   verilens_filter_categories    { political, ai_media, sensitive, misinformation }
 //
 
 const WEBSITE_URL = "http://localhost:8000/website/index.html";
 
 const DEFAULT_CATEGORIES = {
   political: true,
-  ai_meme: true,
-  ai_generated: true,
+  ai_media: true,
+  sensitive: true,
   misinformation: true,
 };
 
