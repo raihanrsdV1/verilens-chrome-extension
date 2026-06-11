@@ -18,8 +18,8 @@
 
   const CATEGORY_LABEL = {
     political: "Political",
-    ai_meme: "AI meme",
-    ai_generated: "AI-generated",
+    ai_media: "AI media",
+    sensitive: "Sensitive",
     misinformation: "Misinformation",
   };
 

@@ -96,13 +96,26 @@
   const observer = new MutationObserver((mutations) => {
     if (addsArticles(mutations)) debouncedScan();
   });
-  observer.observe(document.body, { childList: true, subtree: true });
 
-  scan(); // initial pass for whatever's already on screen
+  function start() {
+    observer.observe(document.body, { childList: true, subtree: true });
 
-  // Start the AUTOMATIC content filter (premium). It self-gates on tier +
-  // settings and runs its OWN observer; for free users it stays dormant.
-  if (window.VerilensFilter) {
-    window.VerilensFilter.init(adapter);
+    scan(); // initial pass for whatever's already on screen
+
+    // Start the AUTOMATIC content filter (premium). It self-gates on tier +
+    // settings and runs its OWN observer; for free users it stays dormant.
+    if (window.VerilensFilter) {
+      window.VerilensFilter.init(adapter);
+    }
   }
+
+  // Master switch (verilens_scanning_enabled, default true). Read once at
+  // injection time — if OFF, this page load attaches nothing. Toggling the
+  // switch back on takes effect after a refresh.
+  chrome.storage.local
+    .get("verilens_scanning_enabled")
+    .then((o) => {
+      if (o.verilens_scanning_enabled !== false) start();
+    })
+    .catch(start);
 })();

@@ -176,23 +176,38 @@
     }, 300);
   }
 
-  // The `selectionchange` event fires on the document whenever the selection changes.
-  // This works reliably in SPAs like X/Twitter regardless of React's event handling.
-  document.addEventListener("selectionchange", handleSelectionChange);
+  function attach() {
+    // The `selectionchange` event fires on the document whenever the selection changes.
+    // This works reliably in SPAs like X/Twitter regardless of React's event handling.
+    document.addEventListener("selectionchange", handleSelectionChange);
 
-  // When the user clicks anywhere EXCEPT our popover, dismiss it.
-  // We must use capture=true so we get this before X's React handlers.
-  document.addEventListener("mousedown", (e) => {
-    if (!popoverHost) return;
-    // If the click is inside our shadow host, preserve the popover.
-    if (popoverHost.contains(e.target)) {
-      // Prevent the click from clearing the text selection (which would trigger
-      // selectionchange and destroy the popover before the click fires).
-      e.preventDefault();
-      return;
-    }
-    // Click is outside — dismiss.
-    removePopover();
-  }, true);
+    // When the user clicks anywhere EXCEPT our popover, dismiss it.
+    // We must use capture=true so we get this before X's React handlers.
+    document.addEventListener("mousedown", (e) => {
+      if (!popoverHost) return;
+      // If the click is inside our shadow host, preserve the popover.
+      if (popoverHost.contains(e.target)) {
+        // Prevent the click from clearing the text selection (which would trigger
+        // selectionchange and destroy the popover before the click fires).
+        e.preventDefault();
+        return;
+      }
+      // Click is outside — dismiss.
+      removePopover();
+    }, true);
+  }
+
+  // Master switch (verilens_scanning_enabled, default true). Read once at
+  // injection time — if OFF, this page load attaches nothing.
+  if (alive()) {
+    chrome.storage.local
+      .get("verilens_scanning_enabled")
+      .then((o) => {
+        if (o.verilens_scanning_enabled !== false) attach();
+      })
+      .catch(attach);
+  } else {
+    attach();
+  }
 
 })();

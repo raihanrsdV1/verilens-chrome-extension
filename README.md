@@ -197,7 +197,7 @@ A free user hitting a gated feature instead receives a short-circuit response fr
 
 ```jsonc
 { "results": [ { "postId": "...",
-    "labels": ["political","ai_meme","ai_generated","misinformation"],
+    "labels": ["political","ai_media","sensitive","misinformation"],
     "confidence": 0.0 } ] }
 ```
 
@@ -388,7 +388,7 @@ ngrok account.
 | **M4** | Popup polish: master toggle, session stats, upgrade screen, collapsed Developer tools (tier dev-switch) | ✅ Done |
 | **M5** | Instagram adapter + Facebook adapter; multi-platform dispatch by hostname | ✅ Done |
 
-Filter categories: `political`, `ai_meme`, `ai_generated`, `misinformation`.
+Filter categories: `political`, `ai_media`, `sensitive`, `misinformation`.
 
 **Supported platforms:** X/Twitter (mature), Instagram & Facebook (best-effort selectors — their DOM is heavily obfuscated and may need retuning in the adapter files).
 

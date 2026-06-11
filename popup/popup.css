@@ -34,6 +34,9 @@ body {
   border-bottom: 1px solid #2f3336;
   position: relative;
 }
+.vl-header[hidden] {
+  display: none;
+}
 .vl-header-center {
   position: absolute;
   left: 50%;

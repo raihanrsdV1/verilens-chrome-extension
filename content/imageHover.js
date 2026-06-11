@@ -292,7 +292,22 @@
     leaveTimer = setTimeout(destroyBadge, 250);
   }
 
-  // Capture phase so we see events inside React's synthetic event system
-  document.addEventListener("mouseover", onMouseOver, true);
-  document.addEventListener("mouseout", onMouseOut, true);
+  function attach() {
+    // Capture phase so we see events inside React's synthetic event system
+    document.addEventListener("mouseover", onMouseOver, true);
+    document.addEventListener("mouseout", onMouseOut, true);
+  }
+
+  // Master switch (verilens_scanning_enabled, default true). Read once at
+  // injection time — if OFF, this page load attaches nothing.
+  if (alive()) {
+    chrome.storage.local
+      .get("verilens_scanning_enabled")
+      .then((o) => {
+        if (o.verilens_scanning_enabled !== false) attach();
+      })
+      .catch(attach);
+  } else {
+    attach();
+  }
 })();
