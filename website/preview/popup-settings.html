@@ -1,0 +1,99 @@
+<!doctype html>
+<!-- Standalone, static preview of the extension's Settings popup for design export
+     (html.to.design → Figma). No popup.js, so no chrome.* calls. Values are mocked
+     to show the populated FREE state. The real popup is popup/popup.html. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="../../popup/popup.css" />
+    <title>Verilens · Settings (preview)</title>
+    <style>
+      /* The real popup is sized by Chrome's popup chrome; pin a width here so it
+         exports as a clean phone-ish artboard. */
+      body { width: 320px; margin: 0 auto; }
+    </style>
+  </head>
+  <body>
+    <header class="vl-header">
+      <span class="vl-logo">🛡</span>
+      <div>
+        <div class="vl-title">Verilens</div>
+        <div class="vl-subtitle">Deepfake &amp; misinformation</div>
+      </div>
+      <span class="vl-tier">free</span>
+    </header>
+
+    <nav class="vl-tabs" role="tablist">
+      <button class="vl-tab active" type="button">⚙ Settings</button>
+      <button class="vl-tab" type="button">❓ Help</button>
+    </nav>
+
+    <div class="vl-panel" data-panel="settings">
+      <section class="vl-card">
+        <div class="vl-row">
+          <div>
+            <div class="vl-row-title">🙈 Auto content filter</div>
+            <div class="vl-row-desc">Automatically hide flagged posts as you scroll.</div>
+          </div>
+          <label class="vl-switch"><input type="checkbox" /><span class="vl-slider"></span></label>
+        </div>
+        <p class="vl-note">
+          🔒 Auto filtering is a <strong>Premium</strong> feature. Manual checks still work on the free plan.
+        </p>
+        <div class="vl-categories">
+          <div class="vl-cat-head">Hide these categories</div>
+          <div class="vl-cat-grid">
+            <label class="vl-check"><input type="checkbox" checked /> Political</label>
+            <label class="vl-check"><input type="checkbox" checked /> AI meme</label>
+            <label class="vl-check"><input type="checkbox" checked /> AI-generated</label>
+            <label class="vl-check"><input type="checkbox" checked /> Misinformation</label>
+          </div>
+        </div>
+      </section>
+
+      <section class="vl-card">
+        <div class="vl-row">
+          <div>
+            <div class="vl-row-title">👁 Scan on hover</div>
+            <div class="vl-row-desc">Automatically check images/videos when you hover over them.</div>
+          </div>
+          <label class="vl-switch"><input type="checkbox" /><span class="vl-slider"></span></label>
+        </div>
+        <div class="vl-subsection">
+          <div class="vl-row-title">🎞 Video analysis length</div>
+          <div class="vl-row-desc">How much of a video the AI model watches before deciding.</div>
+          <select class="vl-select">
+            <option>First 20 seconds</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="vl-card">
+        <div class="vl-cat-head">This session</div>
+        <div class="vl-stats">
+          <div class="vl-stat"><span class="vl-stat-num">2</span><span class="vl-stat-label">Media checks</span></div>
+          <div class="vl-stat"><span class="vl-stat-num">2</span><span class="vl-stat-label">Fact-checks</span></div>
+          <div class="vl-stat"><span class="vl-stat-num">0</span><span class="vl-stat-label">Confirmed AI</span></div>
+          <div class="vl-stat"><span class="vl-stat-num">0</span><span class="vl-stat-label">Filtered</span></div>
+        </div>
+      </section>
+
+      <section class="vl-card vl-upgrade">
+        <div class="vl-upgrade-head">Unlock Premium</div>
+        <ul class="vl-benefits">
+          <li>Video &amp; audio deepfake detection</li>
+          <li>Agentic fact-checking with sources</li>
+          <li>Automatic content filtering</li>
+        </ul>
+        <button class="vl-cta">Upgrade to Premium</button>
+      </section>
+
+      <details class="vl-card vl-dev">
+        <summary class="vl-dev-summary">Developer</summary>
+      </details>
+    </div>
+
+    <footer class="vl-footer">Verilens v0.1.0</footer>
+  </body>
+</html>

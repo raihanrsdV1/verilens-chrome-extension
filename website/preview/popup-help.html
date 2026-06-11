@@ -1,0 +1,99 @@
+<!doctype html>
+<!-- Standalone, static preview of the extension's Help popup for design export
+     (html.to.design → Figma). No popup.js. Mirrors popup/popup.html Help panel. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="../../popup/popup.css" />
+    <title>Verilens · Help (preview)</title>
+    <style>body { width: 320px; margin: 0 auto; }</style>
+  </head>
+  <body>
+    <header class="vl-header">
+      <span class="vl-logo">🛡</span>
+      <div>
+        <div class="vl-title">Verilens</div>
+        <div class="vl-subtitle">Deepfake &amp; misinformation</div>
+      </div>
+      <span class="vl-tier">free</span>
+    </header>
+
+    <nav class="vl-tabs" role="tablist">
+      <button class="vl-tab" type="button">⚙ Settings</button>
+      <button class="vl-tab active" type="button">❓ Help</button>
+    </nav>
+
+    <div class="vl-panel" data-panel="help">
+      <section class="vl-card">
+        <div class="vl-row-title">👋 What does Verilens do?</div>
+        <p class="vl-help-text">
+          Verilens adds small AI-powered checks directly into your social feed
+          (X/Twitter, Instagram, Facebook). It never posts or changes anything —
+          it only analyzes what you choose to check and shows you the result.
+        </p>
+      </section>
+
+      <section class="vl-card">
+        <div class="vl-row-title">🔍 "Check media" button</div>
+        <p class="vl-help-text">
+          Appears under posts with an image or video. Click it to ask an AI model
+          "is this real or AI-generated?" The result shows as a colored badge:
+        </p>
+        <div class="vl-legend">
+          <div class="vl-legend-row"><span class="vl-dot green"></span> <strong>Likely real</strong> — looks like genuine, unedited media.</div>
+          <div class="vl-legend-row"><span class="vl-dot amber"></span> <strong>Uncertain</strong> — the model isn't confident either way.</div>
+          <div class="vl-legend-row"><span class="vl-dot red"></span> <strong>Likely AI / fake</strong> — strong signs of AI generation or manipulation.</div>
+        </div>
+        <p class="vl-help-text">
+          Image checks are <strong>free</strong>. Video (and audio) checks need
+          heavier multimodal models and are part of <strong>Premium</strong>.
+        </p>
+      </section>
+
+      <section class="vl-card">
+        <div class="vl-row-title">✅ Confirmed AI badges (C2PA / SynthID)</div>
+        <p class="vl-help-text">
+          Some images carry an invisible, cryptographically signed "AI-made" label
+          from the tool that created them (e.g. C2PA Content Credentials or
+          Google SynthID). When Verilens finds one, it shows
+          <strong>"Confirmed AI"</strong> immediately — this is stronger evidence
+          than a model's guess, since it's a verified signature, not an estimate.
+        </p>
+      </section>
+
+      <section class="vl-card">
+        <div class="vl-row-title">📰 "Fact-check" button</div>
+        <p class="vl-help-text">
+          Appears under posts with text. Click it to have an AI agent look up the
+          claims in the post against trusted sources and show you whether each
+          claim looks true, false, or unverifiable — with links to what it found.
+          This is a <strong>Premium</strong> feature since it does live research.
+        </p>
+      </section>
+
+      <section class="vl-card">
+        <div class="vl-row-title">⭐ Free vs. Premium</div>
+        <div class="vl-plan-grid">
+          <div class="vl-plan-col">
+            <div class="vl-plan-head">Free</div>
+            <ul class="vl-plan-list">
+              <li>Image deepfake checks</li>
+              <li>AI text detection on selected text</li>
+            </ul>
+          </div>
+          <div class="vl-plan-col">
+            <div class="vl-plan-head">Premium</div>
+            <ul class="vl-plan-list">
+              <li>Video &amp; audio deepfake checks</li>
+              <li>Fact-checking with sources</li>
+              <li>Automatic content filtering</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="vl-footer">Verilens v0.1.0</footer>
+  </body>
+</html>

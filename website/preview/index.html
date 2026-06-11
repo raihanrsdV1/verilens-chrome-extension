@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Verilens · Figma export screens</title>
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #0e0f12; color: #e7e9ea; max-width: 720px; margin: 40px auto; padding: 0 20px; line-height: 1.6; }
+      h1 { font-size: 22px; }
+      a { color: #1d9bf0; }
+      ol { padding-left: 20px; }
+      li { margin: 10px 0; }
+      code { background: #16181c; border: 1px solid #2f3336; padding: 2px 6px; border-radius: 6px; font-size: 13px; }
+      .links { display: grid; gap: 10px; margin: 20px 0; }
+      .links a { display: block; background: #16181c; border: 1px solid #2f3336; border-radius: 10px; padding: 14px 16px; text-decoration: none; }
+    </style>
+  </head>
+  <body>
+    <h1>Verilens — screens to import into Figma</h1>
+    <p>Use the <strong>html.to.design</strong> Figma plugin to import each URL below as
+       editable layers. Steps are at the bottom.</p>
+
+    <div class="links">
+      <a href="../index.html">① Website — landing page</a>
+      <a href="popup-settings.html">② Extension popup — Settings</a>
+      <a href="popup-help.html">③ Extension popup — Help</a>
+      <a href="../success.html">④ Website — Pro unlock / success</a>
+    </div>
+
+    <h2>How to import into Figma</h2>
+    <ol>
+      <li>Start the local server from the repo root: <code>python3 -m http.server 8000</code></li>
+      <li>In Figma: <strong>Menu → Plugins → Manage plugins</strong>, search
+          <strong>"html.to.design"</strong>, install it (free).</li>
+      <li>Open a Figma file → <strong>Plugins → html.to.design → Import</strong>.</li>
+      <li>Paste a full URL, e.g.
+          <code>http://localhost:8000/website/preview/popup-settings.html</code>,
+          and import. It drops in as an editable frame with real text/vector layers.</li>
+      <li>Repeat for each of the 4 URLs above. (Full URLs:
+          <code>/website/index.html</code>, <code>/website/preview/popup-settings.html</code>,
+          <code>/website/preview/popup-help.html</code>, <code>/website/success.html</code>.)</li>
+    </ol>
+    <p><small>Note: html.to.design needs a reachable URL. If the plugin can't see
+       <code>localhost</code>, use its "paste HTML" mode, or run
+       <code>ngrok http 8000</code> and import the ngrok URL instead.</small></p>
+  </body>
+</html>

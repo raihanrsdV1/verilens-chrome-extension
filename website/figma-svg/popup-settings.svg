@@ -1,0 +1,75 @@
+<svg width="320" height="760" viewBox="0 0 320 760" fill="none" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <rect width="320" height="760" fill="#0e0f12"/>
+
+  <!-- Header -->
+  <g>
+    <path d="M22 16 L15 19 v6 c0 5 3 7.5 7 9.5 c4-2 7-4.5 7-9.5 v-6 Z" fill="none" stroke="#1d9bf0" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M19 25 l2 2 4-4" fill="none" stroke="#1d9bf0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="40" y="22" fill="#e7e9ea" font-size="16" font-weight="700">Verilens</text>
+    <text x="40" y="36" fill="#8b98a5" font-size="11">Deepfake &amp; misinformation</text>
+    <rect x="250" y="14" width="56" height="24" rx="12" fill="none" stroke="#2f3336"/>
+    <text x="278" y="30" fill="#8b98a5" font-size="11" font-weight="600" text-anchor="middle">FREE</text>
+  </g>
+  <line x1="0" y1="52" x2="320" y2="52" stroke="#2f3336"/>
+
+  <!-- Tabs -->
+  <rect x="16" y="64" width="140" height="34" rx="17" fill="#1d9bf0"/>
+  <text x="86" y="85" fill="#fff" font-size="13" font-weight="600" text-anchor="middle">⚙ Settings</text>
+  <rect x="164" y="64" width="140" height="34" rx="17" fill="#16181c" stroke="#2f3336"/>
+  <text x="234" y="85" fill="#8b98a5" font-size="13" font-weight="600" text-anchor="middle">❓ Help</text>
+
+  <!-- Card: Auto content filter -->
+  <rect x="16" y="112" width="288" height="150" rx="12" fill="#16181c" stroke="#2f3336"/>
+  <text x="32" y="138" fill="#e7e9ea" font-size="14" font-weight="600">🙈 Auto content filter</text>
+  <text x="32" y="156" fill="#8b98a5" font-size="12">Automatically hide flagged posts as you scroll.</text>
+  <rect x="256" y="126" width="34" height="20" rx="10" fill="#3a3f44"/>
+  <circle cx="266" cy="136" r="7" fill="#fff"/>
+  <!-- premium note -->
+  <rect x="32" y="166" width="256" height="40" rx="8" fill="rgba(243,156,18,0.08)" stroke="rgba(243,156,18,0.4)"/>
+  <text x="40" y="183" fill="#f39c12" font-size="11">🔒 Auto filtering is a Premium feature.</text>
+  <text x="40" y="197" fill="#f39c12" font-size="11">Manual checks still work on the free plan.</text>
+  <!-- categories -->
+  <text x="32" y="226" fill="#8b98a5" font-size="11" font-weight="700" letter-spacing="0.5">HIDE THESE CATEGORIES</text>
+  <rect x="32" y="236" width="14" height="14" rx="3" fill="#1d9bf0"/>
+  <text x="54" y="247" fill="#e7e9ea" font-size="12">Political</text>
+  <rect x="164" y="236" width="14" height="14" rx="3" fill="#1d9bf0"/>
+  <text x="186" y="247" fill="#e7e9ea" font-size="12">AI meme</text>
+
+  <!-- Card: Scan on hover -->
+  <rect x="16" y="278" width="288" height="118" rx="12" fill="#16181c" stroke="#2f3336"/>
+  <text x="32" y="304" fill="#e7e9ea" font-size="14" font-weight="600">👁 Scan on hover</text>
+  <text x="32" y="322" fill="#8b98a5" font-size="12">Automatically check images/videos on hover.</text>
+  <rect x="256" y="292" width="34" height="20" rx="10" fill="#3a3f44"/>
+  <circle cx="280" cy="302" r="7" fill="#fff"/>
+  <text x="32" y="348" fill="#e7e9ea" font-size="13" font-weight="600">🎞 Video analysis length</text>
+  <rect x="32" y="358" width="256" height="30" rx="8" fill="#0e0f12" stroke="#2f3336"/>
+  <text x="42" y="377" fill="#e7e9ea" font-size="12">First 20 seconds</text>
+  <path d="M272 370 l4 4 4-4" stroke="#8b98a5" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Card: This session -->
+  <rect x="16" y="412" width="288" height="86" rx="12" fill="#16181c" stroke="#2f3336"/>
+  <text x="32" y="436" fill="#8b98a5" font-size="11" font-weight="700" letter-spacing="0.5">THIS SESSION</text>
+  <text x="56" y="466" fill="#e7e9ea" font-size="22" font-weight="700" text-anchor="middle">2</text>
+  <text x="56" y="484" fill="#8b98a5" font-size="10" text-anchor="middle">Media checks</text>
+  <text x="128" y="466" fill="#e7e9ea" font-size="22" font-weight="700" text-anchor="middle">2</text>
+  <text x="128" y="484" fill="#8b98a5" font-size="10" text-anchor="middle">Fact-checks</text>
+  <text x="200" y="466" fill="#e7e9ea" font-size="22" font-weight="700" text-anchor="middle">0</text>
+  <text x="200" y="484" fill="#8b98a5" font-size="10" text-anchor="middle">Confirmed AI</text>
+  <text x="272" y="466" fill="#e7e9ea" font-size="22" font-weight="700" text-anchor="middle">0</text>
+  <text x="272" y="484" fill="#8b98a5" font-size="10" text-anchor="middle">Filtered</text>
+
+  <!-- Card: Upgrade -->
+  <rect x="16" y="514" width="288" height="160" rx="12" fill="rgba(29,155,240,0.06)" stroke="rgba(29,155,240,0.4)"/>
+  <text x="32" y="540" fill="#e7e9ea" font-size="15" font-weight="700">Unlock Premium</text>
+  <text x="32" y="566" fill="#1d9bf0" font-size="12">✓  Video &amp; audio deepfake detection</text>
+  <text x="32" y="588" fill="#1d9bf0" font-size="12">✓  Agentic fact-checking with sources</text>
+  <text x="32" y="610" fill="#1d9bf0" font-size="12">✓  Automatic content filtering</text>
+  <rect x="32" y="626" width="256" height="36" rx="10" fill="#1d9bf0"/>
+  <text x="160" y="649" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">Upgrade to Premium</text>
+
+  <!-- Developer (collapsed) -->
+  <rect x="16" y="690" width="288" height="36" rx="12" fill="#16181c" stroke="#2f3336"/>
+  <text x="32" y="712" fill="#8b98a5" font-size="12" font-weight="600">▸ DEVELOPER</text>
+
+  <text x="160" y="748" fill="#5b6571" font-size="11" text-anchor="middle">Verilens v0.1.0</text>
+</svg>

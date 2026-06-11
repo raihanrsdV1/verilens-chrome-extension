@@ -1,0 +1,67 @@
+<svg width="320" height="760" viewBox="0 0 320 760" fill="none" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <rect width="320" height="760" fill="#0e0f12"/>
+
+  <!-- Header -->
+  <path d="M22 16 L15 19 v6 c0 5 3 7.5 7 9.5 c4-2 7-4.5 7-9.5 v-6 Z" fill="none" stroke="#1d9bf0" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M19 25 l2 2 4-4" fill="none" stroke="#1d9bf0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="40" y="22" fill="#e7e9ea" font-size="16" font-weight="700">Verilens</text>
+  <text x="40" y="36" fill="#8b98a5" font-size="11">Deepfake &amp; misinformation</text>
+  <rect x="250" y="14" width="56" height="24" rx="12" fill="none" stroke="#2f3336"/>
+  <text x="278" y="30" fill="#8b98a5" font-size="11" font-weight="600" text-anchor="middle">FREE</text>
+  <line x1="0" y1="52" x2="320" y2="52" stroke="#2f3336"/>
+
+  <!-- Tabs (Help active) -->
+  <rect x="16" y="64" width="140" height="34" rx="17" fill="#16181c" stroke="#2f3336"/>
+  <text x="86" y="85" fill="#8b98a5" font-size="13" font-weight="600" text-anchor="middle">⚙ Settings</text>
+  <rect x="164" y="64" width="140" height="34" rx="17" fill="#1d9bf0"/>
+  <text x="234" y="85" fill="#fff" font-size="13" font-weight="600" text-anchor="middle">❓ Help</text>
+
+  <!-- Card: What does Verilens do -->
+  <rect x="16" y="112" width="288" height="104" rx="12" fill="#16181c" stroke="#2f3336"/>
+  <text x="32" y="136" fill="#e7e9ea" font-size="14" font-weight="600">👋 What does Verilens do?</text>
+  <text x="32" y="158" fill="#8b98a5" font-size="12">Verilens adds small AI-powered checks directly</text>
+  <text x="32" y="174" fill="#8b98a5" font-size="12">into your social feed (X, Instagram, Facebook).</text>
+  <text x="32" y="190" fill="#8b98a5" font-size="12">It never posts or changes anything — it only</text>
+  <text x="32" y="206" fill="#8b98a5" font-size="12">analyzes what you choose to check.</text>
+
+  <!-- Card: Check media + legend -->
+  <rect x="16" y="232" width="288" height="196" rx="12" fill="#16181c" stroke="#2f3336"/>
+  <text x="32" y="256" fill="#e7e9ea" font-size="14" font-weight="600">🔍 "Check media" button</text>
+  <text x="32" y="278" fill="#8b98a5" font-size="12">Appears under posts with an image or video.</text>
+  <text x="32" y="294" fill="#8b98a5" font-size="12">Click to ask an AI model "is this real or AI?"</text>
+  <text x="32" y="310" fill="#8b98a5" font-size="12">The result shows as a colored badge:</text>
+  <!-- legend -->
+  <circle cx="38" cy="330" r="5" fill="#2ecc71"/>
+  <text x="50" y="334" fill="#e7e9ea" font-size="12"><tspan font-weight="700">Likely real</tspan> — genuine, unedited media.</text>
+  <circle cx="38" cy="352" r="5" fill="#f39c12"/>
+  <text x="50" y="356" fill="#e7e9ea" font-size="12"><tspan font-weight="700">Uncertain</tspan> — model isn't confident.</text>
+  <circle cx="38" cy="374" r="5" fill="#e74c3c"/>
+  <text x="50" y="378" fill="#e7e9ea" font-size="12"><tspan font-weight="700">Likely AI / fake</tspan> — strong AI signs.</text>
+  <text x="32" y="404" fill="#8b98a5" font-size="12">Image checks are free. Video checks are</text>
+  <text x="32" y="420" fill="#8b98a5" font-size="12">Premium (heavier multimodal models).</text>
+
+  <!-- Card: Confirmed AI badges -->
+  <rect x="16" y="444" width="288" height="74" rx="12" fill="#16181c" stroke="#2f3336"/>
+  <text x="32" y="468" fill="#e7e9ea" font-size="14" font-weight="600">✅ Confirmed AI (C2PA / SynthID)</text>
+  <text x="32" y="488" fill="#8b98a5" font-size="12">Some media carries a signed "AI-made" label.</text>
+  <text x="32" y="504" fill="#8b98a5" font-size="12">Verilens shows "Confirmed AI" — verified, not a guess.</text>
+
+  <!-- Card: Fact-check button -->
+  <rect x="16" y="534" width="288" height="74" rx="12" fill="#16181c" stroke="#2f3336"/>
+  <text x="32" y="558" fill="#e7e9ea" font-size="14" font-weight="600">📰 "Fact-check" button</text>
+  <text x="32" y="578" fill="#8b98a5" font-size="12">Appears under posts with text. An AI agent checks</text>
+  <text x="32" y="594" fill="#8b98a5" font-size="12">claims against trusted sources. Premium.</text>
+
+  <!-- Card: Free vs Premium -->
+  <rect x="16" y="624" width="288" height="120" rx="12" fill="#16181c" stroke="#2f3336"/>
+  <text x="32" y="648" fill="#e7e9ea" font-size="14" font-weight="600">⭐ Free vs. Premium</text>
+  <!-- Free col -->
+  <text x="32" y="674" fill="#e7e9ea" font-size="12" font-weight="700">Free</text>
+  <text x="32" y="694" fill="#8b98a5" font-size="11">• Image deepfake checks</text>
+  <text x="32" y="710" fill="#8b98a5" font-size="11">• AI text detection</text>
+  <!-- Premium col -->
+  <text x="170" y="674" fill="#1d9bf0" font-size="12" font-weight="700">Premium</text>
+  <text x="170" y="694" fill="#8b98a5" font-size="11">• Video &amp; audio checks</text>
+  <text x="170" y="710" fill="#8b98a5" font-size="11">• Fact-checking w/ sources</text>
+  <text x="170" y="726" fill="#8b98a5" font-size="11">• Automatic content filter</text>
+</svg>

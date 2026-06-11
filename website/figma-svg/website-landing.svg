@@ -1,0 +1,152 @@
+<svg width="1280" height="2480" viewBox="0 0 1280 2480" fill="none" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <rect width="1280" height="2480" fill="#0e0f12"/>
+
+  <!-- Nav -->
+  <rect x="0" y="0" width="1280" height="60" fill="#0e0f12"/>
+  <line x1="0" y1="60" x2="1280" y2="60" stroke="#2f3336"/>
+  <path d="M52 18 L44 21 v7 c0 6 3.5 9 8 11 c4.5-2 8-5 8-11 v-7 Z" fill="none" stroke="#1d9bf0" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M49 29 l2.5 2.5 4.5-4.5" fill="none" stroke="#1d9bf0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="72" y="36" fill="#e7e9ea" font-size="18" font-weight="700">Verilens</text>
+  <text x="940" y="35" fill="#8b98a5" font-size="14" font-weight="500">Features</text>
+  <text x="1030" y="35" fill="#8b98a5" font-size="14" font-weight="500">Pricing</text>
+  <text x="1110" y="35" fill="#8b98a5" font-size="14" font-weight="500">Compare</text>
+  <text x="1200" y="35" fill="#8b98a5" font-size="14" font-weight="500">FAQ</text>
+
+  <!-- Hero -->
+  <rect x="500" y="120" width="280" height="34" rx="17" fill="rgba(29,155,240,0.12)" stroke="rgba(29,155,240,0.35)"/>
+  <text x="640" y="142" fill="#1d9bf0" font-size="13" font-weight="600" text-anchor="middle">Chrome Extension · X · Instagram · Facebook</text>
+  <text x="640" y="220" fill="#e7e9ea" font-size="52" font-weight="800" text-anchor="middle" letter-spacing="-1">Catch deepfakes &amp; misinformation</text>
+  <text x="640" y="278" fill="#e7e9ea" font-size="52" font-weight="800" text-anchor="middle" letter-spacing="-1">before you believe them.</text>
+  <text x="640" y="324" fill="#8b98a5" font-size="18" text-anchor="middle">Verilens scans images, video, and text right inside your social feeds —</text>
+  <text x="640" y="350" fill="#8b98a5" font-size="18" text-anchor="middle">flagging AI-generated media, verifying claims, and filtering noise.</text>
+  <rect x="500" y="390" width="160" height="52" rx="10" fill="#1d9bf0"/>
+  <text x="580" y="423" fill="#fff" font-size="16" font-weight="600" text-anchor="middle">Get Verilens Pro</text>
+  <rect x="672" y="390" width="160" height="52" rx="10" fill="none" stroke="#2f3336"/>
+  <text x="752" y="423" fill="#e7e9ea" font-size="16" font-weight="600" text-anchor="middle">See what it does</text>
+
+  <!-- Pricing section -->
+  <text x="640" y="560" fill="#e7e9ea" font-size="32" font-weight="800" text-anchor="middle" letter-spacing="-0.5">Simple, Honest Pricing</text>
+  <text x="640" y="592" fill="#8b98a5" font-size="17" text-anchor="middle">Start free. Upgrade when you want the full toolkit.</text>
+
+  <!-- Billing toggle -->
+  <text x="540" y="638" fill="#e7e9ea" font-size="15" font-weight="600" text-anchor="end">Monthly</text>
+  <rect x="556" y="624" width="50" height="28" rx="14" fill="#16181c" stroke="#2f3336"/>
+  <circle cx="570" cy="638" r="10" fill="#8b98a5"/>
+  <text x="620" y="638" fill="#8b98a5" font-size="15" font-weight="600">Annual</text>
+  <rect x="688" y="626" width="96" height="24" rx="12" fill="rgba(46,204,113,0.15)"/>
+  <text x="736" y="642" fill="#2ecc71" font-size="12" font-weight="700" text-anchor="middle">Save $24/yr</text>
+
+  <!-- Free plan card -->
+  <rect x="380" y="690" width="240" height="380" rx="18" fill="#16181c" stroke="#2f3336"/>
+  <text x="412" y="730" fill="#e7e9ea" font-size="20" font-weight="700">Free</text>
+  <text x="412" y="778" fill="#e7e9ea" font-size="42" font-weight="800">$0</text>
+  <text x="470" y="778" fill="#8b98a5" font-size="15">forever</text>
+  <text x="412" y="806" fill="#8b98a5" font-size="13">Everything you need to spot fake images.</text>
+  <rect x="412" y="822" width="176" height="40" rx="10" fill="none" stroke="#2f3336"/>
+  <text x="500" y="847" fill="#e7e9ea" font-size="14" font-weight="600" text-anchor="middle">Current plan</text>
+  <text x="412" y="896" fill="#2ecc71" font-size="13">✓  Image deepfake detection</text>
+  <text x="412" y="922" fill="#2ecc71" font-size="13">✓  C2PA &amp; SynthID provenance</text>
+  <text x="412" y="948" fill="#2ecc71" font-size="13">✓  Works on X, Instagram, Facebook</text>
+  <text x="412" y="978" fill="#5b6571" font-size="13">–  Video &amp; audio analysis</text>
+  <text x="412" y="1004" fill="#5b6571" font-size="13">–  AI fact-checking</text>
+  <text x="412" y="1030" fill="#5b6571" font-size="13">–  Auto content filter</text>
+  <text x="412" y="1056" fill="#5b6571" font-size="13">–  AI text detection</text>
+
+  <!-- Pro plan card (featured) -->
+  <rect x="660" y="682" width="240" height="396" rx="18" fill="#13243a" stroke="#1d9bf0" stroke-width="1.5"/>
+  <rect x="724" y="670" width="112" height="26" rx="13" fill="#1d9bf0"/>
+  <text x="780" y="687" fill="#fff" font-size="12" font-weight="700" text-anchor="middle">Most Popular</text>
+  <text x="692" y="730" fill="#e7e9ea" font-size="20" font-weight="700">Pro</text>
+  <text x="692" y="780" fill="#e7e9ea" font-size="42" font-weight="800">$6.99</text>
+  <text x="800" y="780" fill="#8b98a5" font-size="15">/mo</text>
+  <text x="692" y="804" fill="#8b98a5" font-size="13">Billed monthly</text>
+  <text x="692" y="824" fill="#8b98a5" font-size="13">The complete deepfake toolkit.</text>
+  <rect x="692" y="838" width="176" height="40" rx="10" fill="#1d9bf0"/>
+  <text x="780" y="863" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">Purchase Pro</text>
+  <text x="692" y="910" fill="#2ecc71" font-size="13">✓  <tspan font-weight="700" fill="#e7e9ea">Everything in Free</tspan></text>
+  <text x="692" y="936" fill="#2ecc71" font-size="13">✓  Video &amp; audio deepfake analysis</text>
+  <text x="692" y="962" fill="#2ecc71" font-size="13">✓  AI fact-checking agent</text>
+  <text x="692" y="988" fill="#2ecc71" font-size="13">✓  Auto content filter</text>
+  <text x="692" y="1014" fill="#2ecc71" font-size="13">✓  AI text detection</text>
+  <text x="692" y="1040" fill="#2ecc71" font-size="13">✓  Hover-to-scan badge</text>
+  <text x="692" y="1066" fill="#2ecc71" font-size="13">✓  Priority model access</text>
+
+  <!-- ===== Comparison table ===== -->
+  <text x="640" y="1200" fill="#e7e9ea" font-size="32" font-weight="800" text-anchor="middle" letter-spacing="-0.5">Free vs. Pro at a glance</text>
+
+  <!-- table container -->
+  <rect x="40" y="1248" width="1200" height="552" rx="14" fill="#0e0f12" stroke="#2f3336"/>
+  <!-- header row -->
+  <rect x="40" y="1248" width="1200" height="56" rx="14" fill="#16181c"/>
+  <rect x="40" y="1290" width="1200" height="14" fill="#16181c"/>
+  <text x="68" y="1282" fill="#e7e9ea" font-size="15" font-weight="700">Feature</text>
+  <text x="820" y="1282" fill="#e7e9ea" font-size="15" font-weight="700" text-anchor="middle">Free</text>
+  <text x="1080" y="1282" fill="#1d9bf0" font-size="15" font-weight="700" text-anchor="middle">Pro</text>
+
+  <!-- rows -->
+  <!-- row template: label, free mark, pro mark -->
+  <g font-size="14">
+    <text x="68" y="1344" fill="#e7e9ea">Image deepfake detection</text>
+    <text x="820" y="1344" fill="#2ecc71" font-weight="700" text-anchor="middle">✓</text>
+    <text x="1080" y="1344" fill="#2ecc71" font-weight="700" text-anchor="middle">✓</text>
+    <line x1="40" y1="1366" x2="1240" y2="1366" stroke="#2f3336"/>
+
+    <text x="68" y="1406" fill="#e7e9ea">C2PA / SynthID provenance</text>
+    <text x="820" y="1406" fill="#2ecc71" font-weight="700" text-anchor="middle">✓</text>
+    <text x="1080" y="1406" fill="#2ecc71" font-weight="700" text-anchor="middle">✓</text>
+    <line x1="40" y1="1428" x2="1240" y2="1428" stroke="#2f3336"/>
+
+    <text x="68" y="1468" fill="#e7e9ea">Video &amp; audio deepfake analysis</text>
+    <text x="820" y="1468" fill="#8b98a5" text-anchor="middle">—</text>
+    <text x="1080" y="1468" fill="#2ecc71" font-weight="700" text-anchor="middle">✓</text>
+    <line x1="40" y1="1490" x2="1240" y2="1490" stroke="#2f3336"/>
+
+    <text x="68" y="1530" fill="#e7e9ea">AI fact-checking agent</text>
+    <text x="820" y="1530" fill="#8b98a5" text-anchor="middle">—</text>
+    <text x="1080" y="1530" fill="#2ecc71" font-weight="700" text-anchor="middle">✓</text>
+    <line x1="40" y1="1552" x2="1240" y2="1552" stroke="#2f3336"/>
+
+    <text x="68" y="1592" fill="#e7e9ea">Auto content filter (blur on scroll)</text>
+    <text x="820" y="1592" fill="#8b98a5" text-anchor="middle">—</text>
+    <text x="1080" y="1592" fill="#2ecc71" font-weight="700" text-anchor="middle">✓</text>
+    <line x1="40" y1="1614" x2="1240" y2="1614" stroke="#2f3336"/>
+
+    <text x="68" y="1654" fill="#e7e9ea">AI text detection (select &amp; check)</text>
+    <text x="820" y="1654" fill="#8b98a5" text-anchor="middle">—</text>
+    <text x="1080" y="1654" fill="#2ecc71" font-weight="700" text-anchor="middle">✓</text>
+    <line x1="40" y1="1676" x2="1240" y2="1676" stroke="#2f3336"/>
+
+    <text x="68" y="1716" fill="#e7e9ea">Hover-to-scan badge</text>
+    <text x="820" y="1716" fill="#8b98a5" text-anchor="middle">—</text>
+    <text x="1080" y="1716" fill="#2ecc71" font-weight="700" text-anchor="middle">✓</text>
+    <line x1="40" y1="1738" x2="1240" y2="1738" stroke="#2f3336"/>
+
+    <text x="68" y="1778" fill="#e7e9ea">Supported platforms</text>
+    <text x="820" y="1778" fill="#e7e9ea" text-anchor="middle">X · IG · FB</text>
+    <text x="1080" y="1778" fill="#1d9bf0" font-weight="600" text-anchor="middle">X · IG · FB</text>
+  </g>
+
+  <!-- ===== FAQ ===== -->
+  <text x="640" y="1900" fill="#e7e9ea" font-size="32" font-weight="800" text-anchor="middle" letter-spacing="-0.5">Questions</text>
+
+  <rect x="300" y="1944" width="680" height="60" rx="12" fill="#16181c" stroke="#2f3336"/>
+  <text x="328" y="1980" fill="#e7e9ea" font-size="15.5" font-weight="600">How does the deepfake detection work?</text>
+  <text x="952" y="1982" fill="#8b98a5" font-size="20" font-weight="700" text-anchor="end">+</text>
+
+  <rect x="300" y="2018" width="680" height="60" rx="12" fill="#16181c" stroke="#2f3336"/>
+  <text x="328" y="2054" fill="#e7e9ea" font-size="15.5" font-weight="600">Is my data sent anywhere?</text>
+  <text x="952" y="2056" fill="#8b98a5" font-size="20" font-weight="700" text-anchor="end">+</text>
+
+  <rect x="300" y="2092" width="680" height="60" rx="12" fill="#16181c" stroke="#2f3336"/>
+  <text x="328" y="2128" fill="#e7e9ea" font-size="15.5" font-weight="600">What happens when I click Purchase?</text>
+  <text x="952" y="2130" fill="#8b98a5" font-size="20" font-weight="700" text-anchor="end">+</text>
+
+  <rect x="300" y="2166" width="680" height="60" rx="12" fill="#16181c" stroke="#2f3336"/>
+  <text x="328" y="2202" fill="#e7e9ea" font-size="15.5" font-weight="600">Can I cancel?</text>
+  <text x="952" y="2204" fill="#8b98a5" font-size="20" font-weight="700" text-anchor="end">+</text>
+
+  <!-- Footer -->
+  <line x1="0" y1="2420" x2="1280" y2="2420" stroke="#2f3336"/>
+  <text x="48" y="2456" fill="#8b98a5" font-size="14">Verilens — built to keep your feed honest.</text>
+  <text x="1232" y="2456" fill="#5b6571" font-size="14" text-anchor="end">Demo build · prices are illustrative.</text>
+</svg>
