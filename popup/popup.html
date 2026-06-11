@@ -91,7 +91,7 @@
       <section class="vl-card">
         <div class="vl-row">
           <div>
-            <div class="vl-row-title">🙈 Auto content filter</div>
+            <div class="vl-row-title"><svg class="vl-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"></path></svg> Auto content filter</div>
             <div class="vl-row-desc">Automatically hide flagged posts as you scroll.</div>
           </div>
           <label class="vl-switch">
@@ -118,16 +118,16 @@
       <!-- Video Settings -->
       <section class="vl-card">
         <div class="vl-subsection">
-          <div class="vl-row-title">🎞 Video analysis length</div>
+          <div class="vl-row-title"><svg class="vl-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg> Video analysis length</div>
           <div class="vl-row-desc">How much of a video the AI model watches before deciding.</div>
-          <select id="videoMaxSeconds" class="vl-select">
-            <option value="5">First 5 seconds</option>
-            <option value="10">First 10 seconds</option>
-            <option value="20">First 20 seconds</option>
-            <option value="30">First 30 seconds</option>
-            <option value="60">First 60 seconds</option>
-            <option value="0">Full video</option>
-          </select>
+          <div class="vl-chips">
+            <label class="vl-chip"><input type="radio" name="v_len" value="5" /><span>5s</span></label>
+            <label class="vl-chip"><input type="radio" name="v_len" value="10" /><span>10s</span></label>
+            <label class="vl-chip"><input type="radio" name="v_len" value="20" /><span>20s</span></label>
+            <label class="vl-chip"><input type="radio" name="v_len" value="30" /><span>30s</span></label>
+            <label class="vl-chip"><input type="radio" name="v_len" value="60" /><span>60s</span></label>
+            <label class="vl-chip"><input type="radio" name="v_len" value="0" /><span>Full</span></label>
+          </div>
         </div>
       </section>
 

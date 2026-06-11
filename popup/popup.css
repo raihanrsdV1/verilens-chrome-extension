@@ -268,20 +268,25 @@ body {
 .vl-switch input:checked + .vl-slider::before { transform: translateX(18px); }
 .vl-switch input:disabled + .vl-slider { opacity: 0.5; }
 
-/* Detection settings */
+/* Detection settings & Chips */
 .vl-subsection { margin-top: 0; }
-.vl-select {
-  width: 100%;
-  margin-top: 8px;
-  padding: 7px 10px;
+.vl-row-icon { width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; color: #8b98a5; }
+.vl-chips { display: flex; gap: 6px; margin-top: 12px; }
+.vl-chip { cursor: pointer; position: relative; flex: 1; text-align: center; }
+.vl-chip input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
+.vl-chip span {
+  display: block;
+  padding: 6px 0;
   font-size: 12.5px;
-  color: #e7e9ea;
+  font-weight: 700;
+  color: #8b98a5;
   background: #0e0f12;
   border: 1px solid #2f3336;
-  border-radius: 8px;
-  outline: none;
+  border-radius: 6px;
+  transition: all 0.2s ease;
 }
-.vl-select:focus { border-color: #1d9bf0; }
+.vl-chip:hover input:not(:checked) ~ span { border-color: #5b6570; color: #c4c9ce; }
+.vl-chip input:checked ~ span { background: rgba(29, 155, 240, 0.1); color: #1d9bf0; border-color: #1d9bf0; }
 
 /* Session stats */
 .vl-stats {

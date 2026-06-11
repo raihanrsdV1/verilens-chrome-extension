@@ -44,7 +44,7 @@ const els = {
   catInputs: Array.from(document.querySelectorAll("[data-cat]")),
   tierToggle: document.getElementById("tierToggle"),
   tierLabel: document.getElementById("tierLabel"),
-  videoMaxSeconds: document.getElementById("videoMaxSeconds"),
+  videoLenInputs: Array.from(document.querySelectorAll("input[name='v_len']")),
   
   // Stats
   resetStats: document.getElementById("resetStats"),
@@ -107,7 +107,9 @@ function render(state) {
     input.disabled = !catsActive;
   });
 
-  els.videoMaxSeconds.value = String(state.videoMaxSeconds);
+  els.videoLenInputs.forEach((i) => {
+    i.checked = Number(i.value) === state.videoMaxSeconds;
+  });
 
   // Stats
   const s = state.stats || {};
@@ -177,9 +179,13 @@ els.catInputs.forEach((input) => {
   });
 });
 
-els.videoMaxSeconds.addEventListener("change", async () => {
-  await chrome.storage.local.set({ verilens_video_max_seconds: Number(els.videoMaxSeconds.value) });
-  refresh();
+els.videoLenInputs.forEach((i) => {
+  i.addEventListener("change", async () => {
+    if (i.checked) {
+      await chrome.storage.local.set({ verilens_video_max_seconds: Number(i.value) });
+      refresh();
+    }
+  });
 });
 
 els.resetStats.addEventListener("click", async () => {
