@@ -58,6 +58,47 @@
   box-shadow: none;
 }
 
+/* ---- Progress tooltip (shown during fact-check) ---- */
+.verilens-progress-tip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 9999;
+  background: #1a1d21;
+  border: 1px solid #3a3f44;
+  border-radius: 10px;
+  padding: 10px 14px;
+  min-width: 200px;
+  max-width: 300px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.verilens-btn.loading ~ .verilens-progress-tip {
+  display: block;
+}
+.verilens-progress-stage {
+  font-weight: 700;
+  color: #7fe0ab;
+  margin-bottom: 4px;
+  font-size: 12.5px;
+}
+.verilens-progress-detail {
+  color: #b0b8c1;
+  font-size: 11.5px;
+  margin-bottom: 4px;
+}
+.verilens-progress-time {
+  color: #6b7280;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.verilens-progress-time::before {
+  content: "⏱ ";
+}
+
 /* "Check media" — primary action, blue accent */
 .verilens-btn-primary {
   border-color: rgba(29, 155, 240, 0.4);

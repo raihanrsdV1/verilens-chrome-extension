@@ -248,7 +248,7 @@ function buildImageResult(payload, im) {
   };
 }
 
-// ---- Fact-check scan -------------------------------------------------------
+// ---- Fact-check scan (one-shot, used by popup dev panel) -------------------
 async function handleFactcheck(payload) {
   log("factcheck ← received payload:", payload);
   const tier = await getTier();
@@ -289,7 +289,7 @@ async function handleFactcheck(payload) {
   }
 
   var ac = new AbortController();
-  var timer = setTimeout(function () { ac.abort(); }, 120000);
+  var timer = setTimeout(function () { ac.abort(); }, 300000);
 
   try {
     log("factcheck → calling", Config.FACTCHECK_API);
@@ -312,12 +312,15 @@ async function handleFactcheck(payload) {
 
     // Step 2: verify extracted claims against web evidence
     if (claims.length > 0) {
+      var claimsForVerify = claims.map(function(c) {
+        return { claim_text: c.claim || c.claim_text || "", claim: c.claim || c.claim_text || "", verdict: c.verdict, confidence: c.confidence, sources: c.sources || [] };
+      });
       log("factcheck → verifying " + claims.length + " claim(s) via", Config.VERIFY_API);
       try {
         const verifyResponse = await fetch(Config.VERIFY_API, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ postId: payload.postId, claims: claims }),
+          body: JSON.stringify({ postId: payload.postId, claims: claimsForVerify }),
           signal: AbortSignal.timeout(290000),
         });
 
@@ -328,10 +331,14 @@ async function handleFactcheck(payload) {
           extractResult.explanation = verifyResult.explanation || extractResult.explanation;
           log("factcheck → verified: overall=" + extractResult.overall);
         } else {
-          log("factcheck → verify API returned", verifyResponse.status, "(using unverified claims)");
+          log("factcheck → verify API returned", verifyResponse.status, "(stamping claims as unverifiable)");
+          extractResult.claims = claims.map(function(c) { return Object.assign({}, c, { verdict: "unverifiable", confidence: null }); });
+          extractResult.overall = "unverifiable";
         }
       } catch (verifyErr) {
-        log("factcheck → verify API error:", verifyErr.message, "(using unverified claims)");
+        log("factcheck → verify API error:", verifyErr.message, "(stamping claims as unverifiable)");
+        extractResult.claims = claims.map(function(c) { return Object.assign({}, c, { verdict: "unverifiable", confidence: null }); });
+        extractResult.overall = "unverifiable";
       }
     }
 
@@ -357,6 +364,73 @@ async function handleFactcheck(payload) {
       overall: "unverifiable",
       explanation: "Claim extraction failed: " + raw + " (URL: " + (Config.FACTCHECK_API || "undefined") + ")",
     };
+  }
+}
+
+// ---- Fact-check: extract only (used by content script, step 1 of 2) ---------
+async function handleFactcheckExtract(payload) {
+  log("fc-extract ← received payload:", payload);
+  var apiPayload = {
+    postId: payload.postId,
+    captionText: payload.captionText || "",
+    imageUrls: payload.imageUrls || [],
+  };
+  if (payload.videoFrames && payload.videoFrames.length > 0) apiPayload.videoFrames = payload.videoFrames;
+  if (payload.videoUrl) apiPayload.videoUrl = payload.videoUrl;
+  if (payload.audioUrl) apiPayload.audioUrl = payload.audioUrl;
+
+  var ac = new AbortController();
+  var timer = setTimeout(function () { ac.abort(); }, 300000);
+  try {
+    var response = await fetch(Config.FACTCHECK_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(apiPayload),
+      signal: ac.signal,
+    });
+    clearTimeout(timer);
+    if (!response.ok) {
+      var errMsg = "HTTP " + response.status;
+      try { var j = await response.json(); errMsg = j.error || errMsg; } catch (_) {}
+      return { error: true, errorStep: "claim-extractor", errorMessage: errMsg };
+    }
+    var result = await response.json();
+    (result.claims || []).forEach(function(c) { c.verdict = "unverified"; c.confidence = null; });
+    result.cached = false;
+    return result;
+  } catch (e) {
+    clearTimeout(timer);
+    return { error: true, errorStep: "claim-extractor", errorMessage: (e && e.message) || String(e) };
+  }
+}
+
+// ---- Fact-check: verify only (used by content script, step 2 of 2) ----------
+async function handleFactcheckVerify(payload) {
+  log("fc-verify ← verifying", (payload.claims || []).length, "claim(s)");
+  var claimsForApi = (payload.claims || []).map(function(c) {
+    return { claim_text: c.claim || c.claim_text || "", claim: c.claim || c.claim_text || "", verdict: c.verdict, confidence: c.confidence, sources: c.sources || [] };
+  });
+  var ac = new AbortController();
+  var timer = setTimeout(function () { ac.abort(); }, 300000);
+  try {
+    var response = await fetch(Config.VERIFY_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId: payload.postId, claims: claimsForApi }),
+      signal: ac.signal,
+    });
+    clearTimeout(timer);
+    if (!response.ok) {
+      var errMsg = "HTTP " + response.status;
+      try { var j = await response.json(); errMsg = j.error || errMsg; } catch (_) {}
+      return { error: true, errorStep: "fact-verifier", errorMessage: errMsg };
+    }
+    var result = await response.json();
+    result.cached = false;
+    return result;
+  } catch (e) {
+    clearTimeout(timer);
+    return { error: true, errorStep: "fact-verifier", errorMessage: (e && e.message) || String(e) };
   }
 }
 
@@ -477,6 +551,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
     case "SCAN_FACTCHECK":
       handleFactcheck(msg.payload)
+        .then(sendResponse)
+        .catch((e) => sendResponse({ error: String(e) }));
+      return true;
+
+    case "SCAN_FACTCHECK_EXTRACT":
+      handleFactcheckExtract(msg.payload)
+        .then(sendResponse)
+        .catch((e) => sendResponse({ error: String(e) }));
+      return true;
+
+    case "SCAN_FACTCHECK_VERIFY":
+      handleFactcheckVerify(msg.payload)
         .then(sendResponse)
         .catch((e) => sendResponse({ error: String(e) }));
       return true;

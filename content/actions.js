@@ -95,6 +95,34 @@
     }
   }
 
+  function setProgress(btn, stage, detail) {
+    var tip = btn.parentElement.querySelector(".verilens-progress-tip");
+    if (!tip) {
+      tip = el("div", "verilens-progress-tip");
+      btn.parentElement.style.position = "relative";
+      btn.parentElement.append(tip);
+    }
+    var elapsed = "";
+    var t = btn._verilensStartTime;
+    if (t) {
+      var s = Math.round((Date.now() - t) / 1000);
+      var m = Math.floor(s / 60);
+      elapsed = m > 0 ? m + "m " + (s % 60) + "s" : s + "s";
+    }
+    tip.innerHTML = "";
+    tip.append(el("div", "verilens-progress-stage", stage));
+    if (detail) tip.append(el("div", "verilens-progress-detail", detail));
+    if (elapsed) tip.append(el("div", "verilens-progress-time", elapsed));
+    btn.title = stage + (detail ? " — " + detail : "") + (elapsed ? " (" + elapsed + ")" : "");
+  }
+
+  function clearProgress(btn) {
+    var tip = btn.parentElement.querySelector(".verilens-progress-tip");
+    if (tip) tip.remove();
+    btn.title = "";
+    btn._verilensStartTime = null;
+  }
+
   // Shared upgrade-card handlers: a placeholder checkout, plus a dev shortcut
   // that flips the tier to premium, refreshes the button locks, and re-runs.
   function makeUpgradeHandlers(refreshControls, rerun) {
@@ -154,50 +182,105 @@
 
   async function runFactcheck(data, mount, btn, refreshControls, postEl) {
     log("→ SCAN_FACTCHECK request payload:", data);
-    let res;
-    await withLoading(btn, "Checking…", async () => {
+    btn._verilensStartTime = Date.now();
+
+    setProgress(btn, "Preparing…", "Gathering post content");
+
+    if (data.hasVideo && postEl) {
       try {
-        if (data.hasVideo && postEl) {
-          try {
-            const videoEl = window.VerilensVideoFrames.findVideoElement(null, postEl);
-            if (videoEl) {
-              data.videoFrames = await window.VerilensVideoFrames.extractVideoFrames(videoEl);
-              if (data.videoFrames.length > 0) {
-                console.log("[Verilens] Extracted", data.videoFrames.length, "video frames for factcheck");
-              }
-            }
-          } catch (e) {
-            console.warn("[Verilens] Video frame extraction failed:", e);
+        var videoEl = window.VerilensVideoFrames.findVideoElement(null, postEl);
+        if (videoEl) {
+          data.videoFrames = await window.VerilensVideoFrames.extractVideoFrames(videoEl);
+          if (data.videoFrames.length > 0) {
+            console.log("[Verilens] Extracted", data.videoFrames.length, "video frames for factcheck");
           }
         }
-        if (data.hasVideo) {
-          const Adapters = window.VerilensAdapters || {};
-          const h = location.hostname;
-          const a = h.endsWith("x.com") || h.endsWith("twitter.com") ? Adapters.twitter :
-                    h.endsWith("instagram.com") ? Adapters.instagram :
-                    h.endsWith("facebook.com") ? Adapters.facebook : null;
-          if (a && a.extractVideoUrl) {
-            const videoUrl = a.extractVideoUrl(postEl);
-            if (videoUrl) data.videoUrl = videoUrl;
-          }
-        }
-        res = await chrome.runtime.sendMessage({ type: "SCAN_FACTCHECK", payload: data });
+      } catch (e) { console.warn("[Verilens] Video frame extraction failed:", e); }
+    }
+    if (data.hasVideo) {
+      var Adapters = window.VerilensAdapters || {};
+      var h = location.hostname;
+      var a = h.endsWith("x.com") || h.endsWith("twitter.com") ? Adapters.twitter :
+                h.endsWith("instagram.com") ? Adapters.instagram :
+                h.endsWith("facebook.com") ? Adapters.facebook : null;
+      if (a && a.extractVideoUrl) {
+        var videoUrl = a.extractVideoUrl(postEl);
+        if (videoUrl) data.videoUrl = videoUrl;
+      }
+    }
+
+    // ── Step 1: Extract claims ───────────────────────────────────
+    setProgress(btn, "Extracting claims…", "Sending text to AI claim extractor");
+    var _extractTick = setInterval(function() { setProgress(btn, "Extracting claims…", "AI is analyzing the text"); }, 3000);
+    var extractRes;
+    await withLoading(btn, "Extracting…", async () => {
+      try {
+        extractRes = await chrome.runtime.sendMessage({ type: "SCAN_FACTCHECK_EXTRACT", payload: data });
       } catch (e) {
-        res = { error: String(e) };
+        extractRes = { error: true, errorStep: "claim-extractor", errorMessage: String(e) };
       }
     });
-    log("← factcheck result:", res);
+    clearInterval(_extractTick);
+    log("← fc-extract result:", extractRes);
 
-    if (res && res.gated) {
+    if (extractRes && extractRes.gated) {
+      clearProgress(btn);
       g.VerilensBadge.renderUpgrade(
-        mount,
-        { kind: "factcheck", message: res.message },
+        mount, { kind: "factcheck", message: extractRes.message },
         makeUpgradeHandlers(refreshControls, () => runFactcheck(data, mount, btn, refreshControls, postEl))
       );
       return;
     }
 
-    g.VerilensBadge.renderFactcheck(mount, res);
+    if (extractRes && extractRes.error) {
+      clearProgress(btn);
+      g.VerilensBadge.renderFactcheck(mount, {
+        error: true, errorStep: extractRes.errorStep,
+        explanation: extractRes.errorMessage || "Claim extraction failed.",
+      });
+      return;
+    }
+
+    var claims = (extractRes && extractRes.claims) || [];
+    if (!claims.length) {
+      clearProgress(btn);
+      g.VerilensBadge.renderFactcheck(mount, {
+        claims: [], overall: "unverifiable",
+        explanation: "No check-worthy claims found in this post.",
+      });
+      return;
+    }
+
+    // ── Step 2: Verify claims ────────────────────────────────────
+    var claimSummary = claims.length + " claim" + (claims.length !== 1 ? "s" : "") + " found";
+    setProgress(btn, "Verifying claims…", claimSummary + " — searching for evidence");
+    var _verifyTick = setInterval(function() { setProgress(btn, "Verifying claims…", claimSummary + " — cross-referencing sources"); }, 4000);
+    var verifyRes;
+    await withLoading(btn, "Verifying…", async () => {
+      try {
+        verifyRes = await chrome.runtime.sendMessage({
+          type: "SCAN_FACTCHECK_VERIFY",
+          payload: { postId: data.postId, claims: claims }
+        });
+      } catch (e) {
+        verifyRes = { error: true, errorStep: "fact-verifier", errorMessage: String(e) };
+      }
+    });
+    clearInterval(_verifyTick);
+    log("← fc-verify result:", verifyRes);
+
+    clearProgress(btn);
+
+    if (verifyRes && !verifyRes.error) {
+      extractRes.claims = verifyRes.claims || claims;
+      extractRes.overall = verifyRes.overall || "unverifiable";
+      extractRes.explanation = verifyRes.explanation || "";
+    } else {
+      extractRes.claims = claims.map(function(c) { return Object.assign({}, c, { verdict: "unverified", confidence: null }); });
+      if (!extractRes.overall) extractRes.overall = "unverifiable";
+    }
+
+    g.VerilensBadge.renderFactcheck(mount, extractRes);
   }
 
   // Public: attach the control bar for a post. Which buttons appear — and which

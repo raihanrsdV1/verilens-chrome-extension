@@ -160,12 +160,14 @@
     corroborated: "green",
     contradicted: "red",
     unverifiable: "grey",
+    unverified: "amber",
     developing: "amber",
   };
   const CLAIM_LABEL = {
     corroborated: "Corroborated",
     contradicted: "Contradicted",
     unverifiable: "Unverifiable",
+    unverified: "Pending verification",
     developing: "Developing",
   };
 
@@ -180,7 +182,10 @@
     }
     node.append(top);
 
-    node.append(el("p", "verilens-claim-text", claim.claim));
+    const claimText = claim.claim || "(claim text unavailable)";
+    const claimEl = el("p", "verilens-claim-text", claimText);
+    if (!claim.claim) claimEl.style.color = "#999";
+    node.append(claimEl);
 
     if (Array.isArray(claim.sources) && claim.sources.length) {
       const list = el("div", "verilens-sources");
@@ -211,19 +216,28 @@
       return;
     }
 
-    sectionHead(section, "Fact-check · Text", result.cached);
+    const hasOverall = result.overall != null;
+    const title = hasOverall ? "Fact-check · Text" : "Fact-check · Text (extracted)";
+    sectionHead(section, title, result.cached);
 
-    const band = OVERALL_BAND[result.overall] || "grey";
-    const overallRow = el("div", "verilens-verdict-row " + band);
-    overallRow.append(el("span", "verilens-dot"));
-    overallRow.append(el("span", "verilens-verdict-label", OVERALL_LABEL[result.overall] || "Unverifiable"));
-    section.append(overallRow);
+    if (hasOverall) {
+      const band = OVERALL_BAND[result.overall] || "grey";
+      const overallRow = el("div", "verilens-verdict-row " + band);
+      overallRow.append(el("span", "verilens-dot"));
+      overallRow.append(el("span", "verilens-verdict-label", OVERALL_LABEL[result.overall] || "Unverifiable"));
+      section.append(overallRow);
+    }
 
-    if (result.explanation) {
+    const claims = result.claims || [];
+    if (claims.length && !claims.some((c) => c.verdict)) {
+      section.append(el("p", "verilens-explain", "Claims extracted. Verification pending\u2026"));
+    }
+
+    if (hasOverall && result.explanation) {
       section.append(el("p", "verilens-explain", result.explanation));
     }
 
-    (result.claims || []).forEach((c) => section.append(claimNode(c)));
+    claims.forEach((c) => section.append(claimNode(c)));
   }
 
   // ---- Upgrade prompt (premium gate) ---------------------------------------
