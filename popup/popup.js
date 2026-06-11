@@ -3,16 +3,12 @@
 // toggling here updates the feed live (filter.js listens via storage.onChanged).
 //
 // Keys:
+//   verilens_scanning_enabled     boolean (master switch for ALL extension activity)
 //   verilens_tier                 "free" | "premium"
-//   verilens_autofilter_enabled   boolean (master switch)
+//   verilens_autofilter_enabled   boolean (master switch for auto-hiding posts)
 //   verilens_filter_categories    { political, ai_meme, ai_generated, misinformation }
 //
-// AI backend URLs (video/image) are NOT stored here and are not shown in this
-// popup at all — they live in lib/config.local.js (gitignored).
 
-// Where the "Upgrade" button opens the Verilens pricing site. For the local demo
-// this assumes `python -m http.server 8000` from the repo root. Keep in sync with
-// website/config.js → siteUrl.
 const WEBSITE_URL = "http://localhost:8000/website/index.html";
 
 const DEFAULT_CATEGORIES = {
@@ -23,20 +19,34 @@ const DEFAULT_CATEGORIES = {
 };
 
 const els = {
+  // Headers & Views
+  btnOpenSettings: document.getElementById("btnOpenSettings"),
+  btnBack: document.getElementById("btnBack"),
+  mainHeader: document.getElementById("mainHeader"),
+  settingsHeader: document.getElementById("settingsHeader"),
+  viewMain: document.getElementById("viewMain"),
+  viewSettings: document.getElementById("viewSettings"),
+  
+  // Master Switch
+  masterToggleBtn: document.getElementById("masterToggleBtn"),
+  masterStatusText: document.getElementById("masterStatusText"),
+  
+  // Dashboard Elements
+  hoverToggle: document.getElementById("hoverToggle"),
+  upgradePromoCard: document.getElementById("upgradePromoCard"),
+  btnViewDashboard: document.getElementById("btnViewDashboard"),
+  
+  // Settings Elements
   tierBadge: document.getElementById("tierBadge"),
-  tabs: Array.from(document.querySelectorAll(".vl-tab")),
-  panels: Array.from(document.querySelectorAll(".vl-panel")),
   autofilterToggle: document.getElementById("autofilterToggle"),
   premiumNote: document.getElementById("premiumNote"),
   categories: document.getElementById("categories"),
   catInputs: Array.from(document.querySelectorAll("[data-cat]")),
   tierToggle: document.getElementById("tierToggle"),
   tierLabel: document.getElementById("tierLabel"),
-  hoverToggle: document.getElementById("hoverToggle"),
   videoMaxSeconds: document.getElementById("videoMaxSeconds"),
-  upgradeCard: document.getElementById("upgradeCard"),
-  premiumCard: document.getElementById("premiumCard"),
-  upgradeBtn: document.getElementById("upgradeBtn"),
+  
+  // Stats
   resetStats: document.getElementById("resetStats"),
   statScans: document.getElementById("statScans"),
   statFacts: document.getElementById("statFacts"),
@@ -46,6 +56,7 @@ const els = {
 
 async function getState() {
   const o = await chrome.storage.local.get([
+    "verilens_scanning_enabled",
     "verilens_tier",
     "verilens_autofilter_enabled",
     "verilens_filter_categories",
@@ -54,8 +65,9 @@ async function getState() {
     "verilens_video_max_seconds",
   ]);
   return {
+    scanningEnabled: o.verilens_scanning_enabled !== false, // Default to true if not set
     tier: o.verilens_tier || "free",
-    enabled: !!o.verilens_autofilter_enabled,
+    autofilterEnabled: !!o.verilens_autofilter_enabled,
     categories: o.verilens_filter_categories || { ...DEFAULT_CATEGORIES },
     stats: o.verilens_stats || {},
     hoverEnabled: o.verilens_hover_detect_enabled === true,
@@ -66,18 +78,28 @@ async function getState() {
 function render(state) {
   const isPremium = state.tier === "premium";
 
+  // Master Switch
+  els.masterToggleBtn.classList.toggle("active", state.scanningEnabled);
+  els.masterStatusText.textContent = state.scanningEnabled ? "SCANNING ACTIVE" : "ENABLE SCANNING";
+  els.masterStatusText.style.color = state.scanningEnabled ? "#1d9bf0" : "#e7e9ea";
+
+  // Tier Badge
   els.tierBadge.textContent = state.tier;
   els.tierBadge.classList.toggle("premium", isPremium);
+  
+  // Dashboard
+  els.hoverToggle.checked = state.hoverEnabled;
+  els.upgradePromoCard.hidden = isPremium;
 
+  // Settings
   els.tierToggle.checked = isPremium;
   els.tierLabel.textContent = isPremium ? "Premium" : "Free";
 
-  // Auto-filter is premium-only. On free, force the master switch off + locked.
-  els.autofilterToggle.checked = isPremium && state.enabled;
+  els.autofilterToggle.checked = isPremium && state.autofilterEnabled;
   els.autofilterToggle.disabled = !isPremium;
   els.premiumNote.hidden = isPremium;
 
-  const catsActive = isPremium && state.enabled;
+  const catsActive = isPremium && state.autofilterEnabled;
   els.categories.classList.toggle("vl-disabled", !catsActive);
   els.catInputs.forEach((input) => {
     const cat = input.dataset.cat;
@@ -85,51 +107,55 @@ function render(state) {
     input.disabled = !catsActive;
   });
 
-  // Session stats
+  els.videoMaxSeconds.value = String(state.videoMaxSeconds);
+
+  // Stats
   const s = state.stats || {};
   els.statScans.textContent = s.deepfakeScans || 0;
   els.statFacts.textContent = s.factCheckScans || 0;
   els.statConfirmed.textContent = s.confirmedAI || 0;
   els.statFiltered.textContent = s.filteredPosts || 0;
-
-  // Upgrade screen vs. premium-active status
-  els.upgradeCard.hidden = isPremium;
-  els.premiumCard.hidden = !isPremium;
-
-  // Detection settings
-  els.hoverToggle.checked = state.hoverEnabled;
-  els.videoMaxSeconds.value = String(state.videoMaxSeconds);
 }
-
-// Timing probe: how long from this script starting to the first full render.
-// If this prints a small number (e.g. < 50 ms) but the WINDOW still felt slow
-// to appear, the delay is Chrome creating the popup process — not our code.
-const _t0 = performance.now();
-let _timedFirstRender = false;
 
 async function refresh() {
   render(await getState());
-  if (!_timedFirstRender) {
-    _timedFirstRender = true;
-    console.log("[Verilens popup] ready in", Math.round(performance.now() - _t0), "ms");
-  }
 }
 
-// ---- Tabs -------------------------------------------------------------------
-els.tabs.forEach((tab) => {
-  tab.addEventListener("click", () => {
-    const target = tab.dataset.tab;
-    els.tabs.forEach((t) => {
-      t.classList.toggle("active", t === tab);
-      t.setAttribute("aria-selected", t === tab ? "true" : "false");
-    });
-    els.panels.forEach((p) => {
-      p.hidden = p.dataset.panel !== target;
-    });
-  });
+// ---- Navigation ------------------------------------------------------------
+els.btnOpenSettings.addEventListener("click", () => {
+  els.mainHeader.hidden = true;
+  els.viewMain.hidden = true;
+  els.settingsHeader.hidden = false;
+  els.viewSettings.hidden = false;
 });
 
-// ---- wiring ----------------------------------------------------------------
+els.btnBack.addEventListener("click", () => {
+  els.settingsHeader.hidden = true;
+  els.viewSettings.hidden = true;
+  els.mainHeader.hidden = false;
+  els.viewMain.hidden = false;
+});
+
+els.btnViewDashboard.addEventListener("click", () => {
+  chrome.tabs.create({ url: WEBSITE_URL });
+});
+
+// ---- Wiring Toggles --------------------------------------------------------
+
+// Master Power Button
+els.masterToggleBtn.addEventListener("click", async () => {
+  const { scanningEnabled } = await getState();
+  await chrome.storage.local.set({ verilens_scanning_enabled: !scanningEnabled });
+  refresh();
+});
+
+// Dashboard Quick Toggles
+els.hoverToggle.addEventListener("change", async () => {
+  await chrome.storage.local.set({ verilens_hover_detect_enabled: els.hoverToggle.checked });
+  refresh();
+});
+
+// Settings Toggles
 els.tierToggle.addEventListener("change", async () => {
   await chrome.storage.local.set({
     verilens_tier: els.tierToggle.checked ? "premium" : "free",
@@ -151,10 +177,9 @@ els.catInputs.forEach((input) => {
   });
 });
 
-els.upgradeBtn.addEventListener("click", () => {
-  // Opens the Verilens pricing site. Clicking "Purchase" there flips this extension
-  // to Premium automatically (see content/purchaseUnlock.js).
-  chrome.tabs.create({ url: WEBSITE_URL });
+els.videoMaxSeconds.addEventListener("change", async () => {
+  await chrome.storage.local.set({ verilens_video_max_seconds: Number(els.videoMaxSeconds.value) });
+  refresh();
 });
 
 els.resetStats.addEventListener("click", async () => {
@@ -162,23 +187,11 @@ els.resetStats.addEventListener("click", async () => {
   refresh();
 });
 
-// ---- Detection settings ----------------------------------------------------
-els.hoverToggle.addEventListener("change", async () => {
-  await chrome.storage.local.set({ verilens_hover_detect_enabled: els.hoverToggle.checked });
-  refresh();
-});
-
-els.videoMaxSeconds.addEventListener("change", async () => {
-  await chrome.storage.local.set({ verilens_video_max_seconds: Number(els.videoMaxSeconds.value) });
-  refresh();
-});
-
-// Keep the popup in sync if OUR settings change elsewhere (e.g. the in-page dev
-// "Enable premium" link). Ignore the cache key — it changes constantly during
-// classify and would cause needless re-renders.
+// ---- Sync with storage -----------------------------------------------------
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
   if (
+    changes.verilens_scanning_enabled ||
     changes.verilens_tier ||
     changes.verilens_autofilter_enabled ||
     changes.verilens_filter_categories ||
