@@ -288,13 +288,18 @@ async function handleFactcheck(payload) {
     apiPayload.audioUrl = payload.audioUrl;
   }
 
+  var ac = new AbortController();
+  var timer = setTimeout(function () { ac.abort(); }, 120000);
+
   try {
+    log("factcheck → calling", Config.FACTCHECK_API);
     const response = await fetch(Config.FACTCHECK_API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(apiPayload),
-      signal: AbortSignal.timeout(290000),
+      signal: ac.signal,
     });
+    clearTimeout(timer);
 
     if (!response.ok) {
       let errMsg = `API HTTP ${response.status}`;
@@ -338,16 +343,19 @@ async function handleFactcheck(payload) {
     log("factcheck → returning result:", extractResult);
     return extractResult;
   } catch (e) {
-    log("factcheck = API ERROR:", e.message);
+    clearTimeout(timer);
+    var raw = (e && e.message) || String(e) || "unknown";
+    log("factcheck = API ERROR:", raw);
+    log("factcheck = URL was:", Config.FACTCHECK_API);
     return {
       postId: payload.postId,
       cached: false,
       error: true,
       errorStep: "claim-extractor",
-      errorMessage: e.message || "Backend unreachable",
+      errorMessage: raw,
       claims: [],
       overall: "unverifiable",
-      explanation: "Claim extraction failed — the server may be starting up (cold start). Try again in a few seconds.",
+      explanation: "Claim extraction failed: " + raw + " (URL: " + (Config.FACTCHECK_API || "undefined") + ")",
     };
   }
 }
