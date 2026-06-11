@@ -18,7 +18,14 @@ body {
   padding: 14px 16px;
   border-bottom: 1px solid #2f3336;
 }
-.vl-logo { font-size: 20px; }
+.vl-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #2f3336;
+  flex-shrink: 0;
+}
 .vl-title { font-size: 15px; font-weight: 700; }
 .vl-subtitle { font-size: 11px; color: #8b98a5; }
 .vl-tier {

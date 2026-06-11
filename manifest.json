@@ -22,6 +22,12 @@
     "http://localhost/*",
     "http://127.0.0.1/*"
   ],
+  "icons": {
+    "16":  "assets/images/icon16.png",
+    "32":  "assets/images/icon32.png",
+    "48":  "assets/images/icon48.png",
+    "128": "assets/images/icon128.png"
+  },
   "background": {
     "service_worker": "service-worker.js"
   },
@@ -60,7 +66,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["content/styles.css"],
+      "resources": ["content/styles.css", "assets/images/*"],
       "matches": [
         "https://x.com/*",
         "https://twitter.com/*",
@@ -71,6 +77,12 @@
   ],
   "action": {
     "default_title": "Verilens",
-    "default_popup": "popup/popup.html"
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16":  "assets/images/icon16.png",
+      "32":  "assets/images/icon32.png",
+      "48":  "assets/images/icon48.png",
+      "128": "assets/images/icon128.png"
+    }
   }
 }
