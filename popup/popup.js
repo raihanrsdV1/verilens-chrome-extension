@@ -45,6 +45,8 @@ const els = {
   tierToggle: document.getElementById("tierToggle"),
   tierLabel: document.getElementById("tierLabel"),
   videoLenInputs: Array.from(document.querySelectorAll("input[name='v_len']")),
+  premiumVideoNote: document.getElementById("premiumVideoNote"),
+  videoChips: document.getElementById("videoChips"),
   
   // Stats
   resetStats: document.getElementById("resetStats"),
@@ -109,7 +111,11 @@ function render(state) {
 
   els.videoLenInputs.forEach((i) => {
     i.checked = Number(i.value) === state.videoMaxSeconds;
+    i.disabled = !isPremium;
   });
+  
+  els.premiumVideoNote.hidden = isPremium;
+  if (els.videoChips) els.videoChips.classList.toggle("vl-disabled", !isPremium);
 
   // Stats
   const s = state.stats || {};

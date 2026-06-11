@@ -32,8 +32,12 @@ body {
   justify-content: space-between;
   padding: 14px 16px;
   border-bottom: 1px solid #2f3336;
+  position: relative;
 }
 .vl-header-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 8px;

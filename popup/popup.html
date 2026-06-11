@@ -120,7 +120,10 @@
         <div class="vl-subsection">
           <div class="vl-row-title"><svg class="vl-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg> Video analysis length</div>
           <div class="vl-row-desc">How much of a video the AI model watches before deciding.</div>
-          <div class="vl-chips">
+          <p id="premiumVideoNote" class="vl-note" hidden>
+            🔒 Custom video length is a <strong>Premium</strong> feature. Free users are limited to 20 seconds.
+          </p>
+          <div id="videoChips" class="vl-chips">
             <label class="vl-chip"><input type="radio" name="v_len" value="5" /><span>5s</span></label>
             <label class="vl-chip"><input type="radio" name="v_len" value="10" /><span>10s</span></label>
             <label class="vl-chip"><input type="radio" name="v_len" value="20" /><span>20s</span></label>
