@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verilens /docs — Admin</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="docs.css" />
+  <script src="content.js"></script>
+</head>
+<body>
+
+  <!-- ===== Passphrase gate ===== -->
+  <div id="adminGate" class="admin-gate">
+    <div class="admin-gate-card">
+      <svg class="docs-gate-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:44px;height:44px;color:var(--accent)">
+        <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </svg>
+      <h1>Admin access</h1>
+      <p>Enter the admin passphrase to edit the /docs module.</p>
+      <div class="admin-field">
+        <input type="password" id="passInput" placeholder="Passphrase" autocomplete="off"
+               style="width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:11px 12px;font-size:14px" />
+      </div>
+      <button id="passBtn" class="btn btn-primary btn-block" style="margin-top:12px">Unlock</button>
+      <p id="passErr" style="color:var(--red);font-size:13px;margin-top:10px" hidden>Incorrect passphrase.</p>
+    </div>
+  </div>
+
+  <!-- ===== Admin app ===== -->
+  <div id="adminApp" class="admin-shell" hidden>
+
+    <div class="admin-toolbar">
+      <a class="docs-brand" href="index.html" style="font-size:16px">
+        <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.4 8 11 4.6-2.6 8-6 8-11V5l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+        <span class="brand-name">Verilens</span><span class="docs-chip">admin</span>
+      </a>
+      <span id="dirtyStatus" class="admin-status">No changes</span>
+      <span class="spacer"></span>
+      <button id="btnPreview" class="admin-mini">Preview ↗</button>
+      <button id="btnSaveDraft" class="admin-mini">Save draft</button>
+      <button id="btnPublish" class="btn btn-primary" style="height:34px;padding:0 16px;font-size:13px">Publish</button>
+    </div>
+
+    <div id="adminWarn" class="admin-warn">
+      <strong>Note:</strong> This panel saves to your browser (localStorage) — changes are visible
+      to <em>you</em> instantly via Publish. To make them permanent for everyone, click
+      <strong>Export → content.js</strong> and commit the file. Access control here is
+      showcase-grade, not a security boundary.
+    </div>
+
+    <!-- Access & scheduling -->
+    <section class="admin-card">
+      <h2>🔐 Access & Scheduling</h2>
+      <p class="hint">Control public visibility of /docs and the publish window.</p>
+      <div class="admin-field admin-toggle">
+        <input type="checkbox" id="acEnabled" /> <label for="acEnabled" style="margin:0;text-transform:none;letter-spacing:0">Publicly accessible (master ON/OFF)</label>
+      </div>
+      <div class="admin-field admin-toggle">
+        <input type="checkbox" id="acSchedule" /> <label for="acSchedule" style="margin:0;text-transform:none;letter-spacing:0">Restrict to a date/time window</label>
+      </div>
+      <div class="admin-row">
+        <div class="admin-field"><label>Start</label><input type="datetime-local" id="acStart" /></div>
+        <div class="admin-field"><label>End</label><input type="datetime-local" id="acEnd" /></div>
+      </div>
+      <div class="admin-field"><label>Admin passphrase</label><input type="text" id="acPass" /></div>
+    </section>
+
+    <!-- Product meta -->
+    <section class="admin-card">
+      <h2>📦 Product</h2>
+      <div class="admin-field"><label>Name</label><input type="text" id="pName" /></div>
+      <div class="admin-field"><label>Tagline</label><input type="text" id="pTagline" /></div>
+      <div class="admin-field"><label>One-liner</label><textarea id="pOneLiner"></textarea></div>
+      <div class="admin-field"><label>Repo URL</label><input type="text" id="pRepo" /></div>
+    </section>
+
+    <!-- Pitch deck -->
+    <section class="admin-card">
+      <h2>🎤 Pitch Deck <button id="addPitch" class="admin-mini" style="margin-left:auto">+ Add section</button></h2>
+      <p class="hint">Drag the ⠿ handle to reorder. These render in order on /docs.</p>
+      <div id="pitchList"></div>
+    </section>
+
+    <!-- Team -->
+    <section class="admin-card">
+      <h2>👥 Team <button id="addMember" class="admin-mini" style="margin-left:auto">+ Add member</button></h2>
+      <p class="hint">Upload a photo — it's auto-resized to a uniform 320×320 circle. Missing photo → initials avatar.</p>
+      <div class="admin-field"><label>Team name (optional)</label><input type="text" id="teamName" /></div>
+      <div id="memberList"></div>
+    </section>
+
+    <!-- Feature matrix -->
+    <section class="admin-card">
+      <h2>🧩 Feature Matrix <button id="addFeature" class="admin-mini" style="margin-left:auto">+ Add feature</button></h2>
+      <div id="featureList"></div>
+    </section>
+
+    <!-- Diagrams -->
+    <section class="admin-card">
+      <h2>📊 Diagrams (Mermaid)</h2>
+      <p class="hint">Mermaid flowchart source. Renders live on /docs.</p>
+      <div class="admin-field"><label>Architecture</label><textarea id="diagArch" class="code"></textarea></div>
+      <div class="admin-field"><label>Data flow</label><textarea id="diagFlow" class="code"></textarea></div>
+    </section>
+
+    <!-- Advanced (technical content as JSON) -->
+    <section class="admin-card">
+      <h2>🛠 Technical Content</h2>
+      <p class="hint">Overview, stack, APIs, data/AI layers, roadmap, performance, security, analytics, changelog — structured JSON. Validated on Publish.</p>
+      <div class="admin-field"><label>Advanced content (JSON)</label><textarea id="advJson" class="code" style="min-height:260px"></textarea></div>
+      <p id="jsonErr" style="color:var(--red);font-size:13px;margin-top:8px" hidden></p>
+    </section>
+
+    <!-- Export & versions -->
+    <section class="admin-card">
+      <h2>📤 Export & Versions</h2>
+      <div class="admin-row">
+        <button id="exJson" class="admin-mini">Export JSON</button>
+        <button id="exContent" class="admin-mini">Export content.js</button>
+        <button id="exMd" class="admin-mini">Export Markdown</button>
+        <button id="revertDefaults" class="admin-mini danger">Revert to defaults</button>
+      </div>
+      <h4 style="margin-top:18px;font-size:13px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.3px">Published versions</h4>
+      <div id="versionList" class="admin-versions"></div>
+    </section>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

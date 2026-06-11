@@ -20,6 +20,7 @@ This repository is the **extension (frontend) + a mock backend**. The real AI pi
 - [No build step — how modules are shared](#no-build-step--how-modules-are-shared)
 - [Getting started (load & test)](#getting-started-load--test)
 - [Configuring real AI backends (optional)](#configuring-real-ai-backends-optional)
+- [Marketing site & live `/docs` module](#marketing-site--live-docs-module)
 - [Dev tips & debugging](#dev-tips--debugging)
 - [Conventions for contributors](#conventions-for-contributors)
 - [Roadmap](#roadmap)
@@ -343,6 +344,95 @@ per notebook, added as Kaggle Secrets:
 Just renaming/duplicating the same token under multiple secret names does
 **not** fix the conflict — each token has to come from a genuinely different
 ngrok account.
+
+---
+
+## Marketing site & live `/docs` module
+
+The [`website/`](website/) folder is a **separate static site** (plain HTML/CSS/JS,
+no build step) — it is **not** part of the extension bundle. It contains the
+marketing landing page, the demo purchase/upgrade flow, and a self-contained,
+admin-controlled **`/docs` module** that doubles as a pitch deck, technical
+whitepaper, and live system dashboard.
+
+### Run it locally
+
+The site is served as static files from the **repo root** so `/docs` can read
+the real `manifest.json`:
+
+```sh
+python3 -m http.server 8000      # or: ./serve.sh
+```
+
+| Page | URL |
+|------|-----|
+| Marketing landing | `http://localhost:8000/website/index.html` |
+| **Live `/docs`** | `http://localhost:8000/website/docs/index.html` |
+| **`/docs` admin** | `http://localhost:8000/website/docs/admin.html` |
+
+The popup's "View dashboard" button and the landing-page nav both link to
+`/docs`. When deployed (e.g. GitHub Pages with `website/` as the site root),
+the route is simply `/docs`.
+
+### What `/docs` is
+
+A single page that combines three things, all driven from one source of truth:
+
+- **YC-style pitch deck** — Problem → Solution → … → Team → Vision.
+- **Technical whitepaper** — architecture & data-flow diagrams (Mermaid),
+  feature matrix, tech stack, API docs, data/AI layers, security, roadmap,
+  analytics, changelog.
+- **Live system dashboard** — fetches the real [`manifest.json`](manifest.json)
+  at runtime (version, MV level, supported platforms, permission counts) and
+  pings the live fact-check APIs for up/down status. Not static screenshots.
+
+Built-in: grouped sidebar TOC + scrollspy, global search (`/` to focus),
+PDF (print), Markdown, and shareable-link export, light/dark, mobile responsive.
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| [`website/docs/index.html`](website/docs/index.html) | Public `/docs` page shell |
+| [`website/docs/docs.js`](website/docs/docs.js) | Renderer: access gate, TOC, search, live data, Mermaid, exports |
+| [`website/docs/docs.css`](website/docs/docs.css) | YC-style layout, responsive, print/PDF + admin styles |
+| [`website/docs/content.js`](website/docs/content.js) | **Single source of truth** — all pitch + technical content + access config |
+| [`website/docs/admin.html`](website/docs/admin.html) | Admin panel UI |
+| [`website/docs/admin.js`](website/docs/admin.js) | Section editing, team image resize, scheduling, versioning, export |
+
+### Access control & scheduling
+
+`/docs` is gated by a client-side toggle + optional date window, configured in
+[`content.js`](website/docs/content.js) under `access` (and editable in the admin
+panel):
+
+- **`enabled`** — master ON/OFF. OFF → visitors see a "Not Available" page.
+- **`useSchedule` + `start` / `end`** — when on, `/docs` is public **only**
+  inside that window (otherwise "Not Yet Available" / "Window Closed"). Default
+  window: **June 10 00:00 → June 14 23:59**.
+
+> This is **showcase-grade gating, not a security boundary** — there's no server
+> to enforce it, so the config is readable in source. It's meant for a judging /
+> investor-preview window on a static host.
+
+### Admin panel
+
+Open `admin.html` and enter the passphrase (`access.adminPassphrase` in
+`content.js`, default **`verilens-admin`**). From there you can:
+
+- Edit every section (pitch deck with drag-to-reorder, product meta, feature
+  matrix, Mermaid diagrams, and the rest as structured JSON).
+- Manage the **team**: add/remove members, set name/role/email, and upload a
+  photo that's **auto-resized to a uniform 320×320 circle** (initials avatar as
+  fallback).
+- Toggle visibility and set the publish window.
+- **Save draft** / **Publish** / **Preview** (`?preview=1` layers the draft and
+  bypasses the gate), with a rolling **version history** you can restore.
+- **Export** the config as JSON, Markdown, or a regenerated `content.js`.
+
+Admin edits are saved to the browser's `localStorage` (instant for you via
+Publish). To make changes **permanent for everyone**, use **Export → content.js**
+and commit the regenerated file.
 
 ---
 
