@@ -1,364 +1,194 @@
-# Verilens
+<div align="center">
 
-**Verilens** is a Manifest V3 Chrome extension that helps people spot **deepfakes** and **misinformation** directly in their social feeds.
+# 🛡 Verilens
 
-This repository is the **extension (frontend) + a mock backend**. The real AI pipeline (multimodal deepfake detection, agentic fact-checking, content classification) is a **separately hosted backend** built by our backend team. Everything here is built so that the day the real backend is ready, we swap the mock `fetch` calls for real ones and **nothing in the UI changes** — the request/response contracts are fixed (see [Backend contracts](#backend-contracts)).
+### Deepfake & misinformation detection, right inside your social feed.
 
-> Status: **M1 + M2 complete** (manual image deepfake check, manual fact-check, tier gating, upgrade prompts, local cache mirror). See [Roadmap](#roadmap).
+Verilens is a Manifest V3 browser extension that flags **AI‑generated media** and **misinformation** on X/Twitter, Instagram, and Facebook — combining verifiable content provenance, multimodal deepfake models, and agentic fact‑checking behind a clean, unobtrusive UI.
+
+</div>
 
 ---
 
 ## Table of contents
 
-- [Product model — three separate capabilities](#product-model--three-separate-capabilities)
-- [Tiers & paywall](#tiers--paywall)
+- [Overview](#overview)
+- [Capabilities](#capabilities)
+- [How detection works](#how-detection-works)
+- [Provenance‑first design](#provenance-first-design)
+- [Tiers](#tiers)
+- [Supported platforms](#supported-platforms)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Connecting the real AI models](#connecting-the-real-ai-models)
+- [Marketing site & live `/docs`](#marketing-site--live-docs)
 - [Architecture](#architecture)
-- [How it works (request flow)](#how-it-works-request-flow)
-- [Backend contracts](#backend-contracts)
-- [The mock backend](#the-mock-backend)
-- [Caching](#caching)
-- [No build step — how modules are shared](#no-build-step--how-modules-are-shared)
-- [Getting started (load & test)](#getting-started-load--test)
-- [Configuring real AI backends (optional)](#configuring-real-ai-backends-optional)
-- [Marketing site & live `/docs` module](#marketing-site--live-docs-module)
-- [Dev tips & debugging](#dev-tips--debugging)
-- [Conventions for contributors](#conventions-for-contributors)
-- [Roadmap](#roadmap)
+- [Project structure](#project-structure)
+- [Integration contracts](#integration-contracts)
+- [Engineering notes](#engineering-notes)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## Product model — three separate capabilities
+## Overview
 
-Verilens has **three distinct capabilities**. They are separate features with separate costs, separate UI, and separate tiers. **Do not merge them into a single "score."**
+Synthetic media and coordinated misinformation now spread faster than people can vet them. Verilens brings verification to the point of consumption: as you scroll, it attaches a quiet **🛡 Verilens** control to each post so you can check media or claims on demand, and — for subscribers — automatically blurs flagged content before you ever engage with it.
 
-| # | Capability | Trigger | Cost / path | Tier |
-|---|------------|---------|-------------|------|
-| 1 | **Deepfake detection** | Manual — user clicks **"Check media"** on a specific post | Full multimodal pipeline | Image = **Free**; Video + Audio = **Premium** |
-| 2 | **Fact-check** | Manual — user clicks **"Fact-check"** | Agentic verifier (agent + search) | **Premium** |
-| 3 | **Content filtering** | **Automatic** — scans posts as they appear | **Cheap** lightweight classifier (NOT the full pipeline) | **Premium** |
-
-Key rules:
-
-- **Nothing runs the expensive pipeline automatically.** Deepfake and fact-check are always user-triggered. Running them on every feed post would be cost-prohibitive.
-- **Content filtering is the only automatic feature**, and because it runs on every post it **must** use the cheap classify path — never the deepfake or fact-check pipeline.
-- Deepfake and fact-check results are shown as **separate sections** in the result panel — never a single merged number.
-- A free user who taps a premium feature sees an **upgrade prompt**, never a silent failure.
+The extension is privacy‑respecting and standards‑aware: it parses open **C2PA / Content Credentials** locally for instant, verifiable answers, and only escalates to hosted AI models when provenance is inconclusive. Heavy AI never runs on every post — manual checks are user‑triggered, and automatic filtering uses a deliberately cheap path.
 
 ---
 
-## Tiers & paywall
+## Capabilities
 
-All gating lives in a **single source of truth**: [`lib/tiers.js`](lib/tiers.js).
+Verilens has **three distinct capabilities** — separate features, separate costs, separate UI. They are never merged into a single "score."
 
-```js
-export const TIER_RULES = {
-  free: {
-    deepfakeImage: true,
-    deepfakeVideo: false,
-    deepfakeAudio: false,
-    factCheck:     false,
-    autoFilter:    false,
-  },
-  premium: {
-    deepfakeImage: true,
-    deepfakeVideo: true,
-    deepfakeAudio: true,
-    factCheck:     true,
-    autoFilter:    true,
-  },
-};
-// isAllowed("factCheck", "free") -> false
-```
+| Capability | Trigger | What it does |
+|---|---|---|
+| **Deepfake detection** | Manual — *Check media* on a post | Determines whether an image, video, or audio clip is AI‑generated or manipulated, with a confidence band and plain‑English explanation. |
+| **Fact‑check** | Manual — *Fact‑check* on a post | Runs an agentic verifier that checks the post's claims against trusted sources and returns claim‑level verdicts with citations. |
+| **Content filtering** | Automatic — as posts appear | Classifies posts via a lightweight model and blurs flagged categories in place, with a one‑tap *Show anyway*. |
 
-To change what's gated, edit **only** this file. The service worker is the authoritative gatekeeper (it short-circuits gated requests before calling the backend); the UI also reads tier rules to show locks, but never to *enforce* the gate.
+Plus **AI text detection**: select text on a page to assess whether it was AI‑generated (powered by a Fast‑DetectGPT backend).
 
-The current tier is stored in `chrome.storage.local` under `verilens_tier` (defaults to `"free"`). A proper in-popup tier dev-switch arrives in M4; until then, flip it from the **service worker console** (see [Dev tips](#dev-tips--debugging)).
+Design principles:
+
+- **Expensive pipelines never run automatically.** Deepfake and fact‑check are always user‑initiated.
+- **Automatic filtering uses the cheap path only** — never the full deepfake or fact‑check pipeline.
+- **Deepfake and fact‑check results are shown separately**, never collapsed into one number.
+- **Premium‑gated actions show an upgrade prompt**, never a silent failure.
 
 ---
 
-## Architecture
+## How detection works
+
+A *Check media* request resolves through a provenance‑first pipeline that escalates only as far as it needs to:
 
 ```
-verilens/
-├── manifest.json              # MV3 config: permissions, content scripts, host matches
-├── service-worker.js          # "Brain": message router, tier enforcement, cache, calls backend (mock)
-├── lib/
-│   ├── tiers.js               # TIER_RULES + isAllowed() — single source of truth for gating
-│   ├── hash.js                # Stable contentHash (FNV-1a) from image URLs + caption
-│   ├── cache.js               # Local LRU mirror over chrome.storage.local, keyed by kind:postId
-│   └── mockBackend.js         # Deterministic fake responses for all three capabilities
-└── content/
-    ├── adapters/
-    │   └── twitter.js         # ALL X/Twitter DOM knowledge (findPosts, extractPostData, anchor)
-    ├── content.js             # Entry point: finds posts, attaches per-post controls
-    ├── actions.js             # Per-post Shadow DOM host + "Check media" / "Fact-check" buttons
-    ├── badge.js               # Renders deepfake + fact-check result panels + upgrade card
-    └── styles.css             # Scoped styles (loaded INSIDE the Shadow DOM)
+Check media (image)
+   │
+   ├─ Stage A · LOCAL C2PA      signed credential declares AI?  → ✓ Confirmed AI (instant, no backend)
+   │
+   ├─ Stage B · BACKEND SynthID  watermark detected?            → ✓ Confirmed AI
+   │
+   └─ Both inconclusive          → deepfake model               → ⚠ Likely AI / Uncertain / Likely real  (+ % confidence)
 ```
 
-### Hard MV3 rules we follow
+This means most cheap, definitive cases are answered locally and instantly, and the costly multimodal model is reserved for the genuinely ambiguous posts.
 
-- **Service worker, not a background page.** It terminates when idle, so we keep **zero durable state in globals** — everything persistent lives in `chrome.storage.local`.
-- **No remotely-hosted code.** All JS ships in the extension; the AI lives on the backend and is reached via `fetch`.
-- **Minimal permissions.** Only `storage` + host permissions for our target platforms (`x.com`, `twitter.com`) — never `<all_urls>`.
-- **Shadow DOM for all injected UI**, so the site's CSS and ours stay isolated.
-- **Vanilla JS + CSS** in the content script — no framework injected into the page.
-- The auto-filter (M3) uses a `MutationObserver`. Manual scans are click-triggered. (Note: M1/M2 also use a `MutationObserver`, but **only to attach buttons** — it performs no network calls and runs no classifier.)
+The result panel surfaces three clearly distinct trust levels:
 
-### Platform adapters
-
-Each platform gets one module under `content/adapters/`. All DOM knowledge for that site lives there, so the rest of the extension is platform-agnostic. Every adapter exports:
-
-```js
-findPosts()                  // -> Array<postEl>
-extractPostData(postEl)      // -> { postId, postUrl, contentHash, imageUrls, captionText, hasVideo, hasAudio }
-getActionAnchor(postEl)      // -> { parent, before }  where to attach our UI
-```
-
-Adapters anchor on **stable** selectors only: `[role=...]`, `[data-testid=...]`, `<img>`, `aria-label`, `<time>` permalinks. **Never** obfuscated CSS class names.
+1. **✓ Confirmed AI — C2PA Content Credentials** (verifiable provenance, local)
+2. **✓ Confirmed AI — SynthID watermark** (verifiable provenance, backend)
+3. **⚠ Model assessment** (probabilistic, with a confidence percentage)
 
 ---
 
-## How it works (request flow)
+## Provenance‑first design
 
-1. **content.js** observes the feed and, for each new post with analyzable media, calls **actions.js** to attach a quiet **🛡 Verilens** control bar (Shadow DOM).
-2. User clicks **"Check media"** or **"Fact-check"**.
-3. **actions.js** computes the post data (via the adapter, including a stable `contentHash`) and sends a message to the **service worker**.
-4. The **service worker**:
-   - enforces the **tier gate** (gated → returns an upgrade prompt, never calls the backend);
-   - checks the **local cache mirror** (hit → returns instantly with `cached: true`);
-   - on a miss, calls the **backend** (currently `mockBackend.js`), then writes the result to the mirror.
-5. **badge.js** renders the result into the post's Shadow DOM panel — deepfake and fact-check in separate sections.
+Verilens treats *verifiable provenance* as stronger evidence than any probabilistic model, and splits the work by where it can correctly run:
 
----
+**Stage A — local C2PA ([`lib/provenanceLocal.js`](lib/provenanceLocal.js))**
+C2PA / Content Credentials is an open, signed‑metadata standard, so it can be parsed entirely in the browser with no model and no API key. Verilens reads the image bytes, detects the manifest, and confirms AI only when the manifest *declares* AI generation — a credentialed real photograph is never misreported.
 
-## Backend contracts
+**Stage B — backend SynthID**
+SynthID detection is a hosted, keyed service; the extension never attempts to compute it. The backend returns it as one signal (`provenance.synthid`) that the extension simply consumes.
 
-Build all UI against these exact shapes. When the real backend is ready, only the transport inside the service worker changes.
-
-### Requests
-
-```jsonc
-// POST /deepfake   and   POST /factcheck
-{ "postId": "...", "postUrl": "...", "contentHash": "...",
-  "imageUrls": ["..."], "captionText": "...", "hasVideo": false, "hasAudio": false }
-
-// POST /classify  (batched, cheap path, used by the auto-filter)
-{ "posts": [ { "postId": "...", "contentHash": "...", "captionText": "...", "imageUrls": ["..."] } ] }
-```
-
-### Deepfake result
-
-```jsonc
-{
-  "postId": "...",
-  "cached": true,
-  "media": {
-    "image": { "aiGenerated": 0.0, "verdict": "likely_real|uncertain|likely_ai" },
-    "video": { "available": false, "reason": "premium_required" },
-    "audio": { "available": false, "reason": "premium_required" }
-  },
-  // Provenance. `confirmed` is set when verifiable provenance proves AI; the
-  // backend supplies provenance.synthid (the extension never computes it). C2PA
-  // is resolved locally in Stage A and short-circuits before the backend.
-  "confirmed": "c2pa | synthid | null",
-  "provenance": {
-    "c2pa": "present | absent",
-    "synthid": "present | absent | uncertain",
-    "source": "Adobe Firefly | null"
-  },
-  "band": "green|amber|red",
-  "explanation": "Plain-English, 2-3 sentences."
-}
-```
-
-### Fact-check result
-
-```jsonc
-{
-  "postId": "...",
-  "cached": false,
-  "claims": [
-    { "claim": "...", "verdict": "corroborated|contradicted|unverifiable|developing",
-      "confidence": 0.0,
-      "sources": [ { "outlet": "Reuters", "url": "...", "summary": "..." } ] }
-  ],
-  "overall": "mostly_true|mixed|mostly_false|unverifiable",
-  "explanation": "Plain-English summary."
-}
-```
-
-A free user hitting a gated feature instead receives a short-circuit response from the worker:
-
-```jsonc
-{ "gated": true, "feature": "factCheck", "message": "Upgrade to Premium to use it." }
-```
-
-### Classify result (auto-filter, cheap path — used in M3)
-
-```jsonc
-{ "results": [ { "postId": "...",
-    "labels": ["political","ai_media","sensitive","misinformation"],
-    "confidence": 0.0 } ] }
-```
+**Correctness rule.** Provenance *present* → high‑confidence AI. Provenance *absent* → **inconclusive**, route to the model. Absence is never presented as "authentic."
 
 ---
 
-## The mock backend
+## Tiers
 
-[`lib/mockBackend.js`](lib/mockBackend.js) lets us build the whole extension before the real AI exists.
+Gating lives in a single source of truth: [`lib/tiers.js`](lib/tiers.js).
 
-- **Deterministic from `contentHash`** — the same post always returns the same verdict, so the UI is predictable while developing.
-- **Respects tiers** — e.g. on the free tier, video/audio come back `{ available: false, reason: "premium_required" }`.
-- **Latency & cache flag are owned by the worker, not the mock.** The worker only calls the mock on a cache **miss**, and adds the artificial 400–900ms (deepfake) / 500–1200ms (fact-check) delay there — exactly how the real backend split will behave, so loading states are real.
+| Feature | Free | Premium |
+|---|:---:|:---:|
+| Image deepfake detection | ✅ | ✅ |
+| Video & audio deepfake detection | — | ✅ |
+| Fact‑check | — | ✅ |
+| Automatic content filtering | — | ✅ |
 
-Swapping in the real backend = replace the `Mock.deepfake(...)` / `Mock.factcheck(...)` calls in `service-worker.js` with `fetch()` calls to the contract endpoints. The cache, gating, and UI are untouched.
-
----
-
-## Provenance pre-check (two-stage, split by where it can run)
-
-Before the probabilistic deepfake pipeline runs, we check for **verifiable provenance**. The split is dictated by runtime reality:
-
-### Stage A — LOCAL (in the extension), [`lib/provenanceLocal.js`](lib/provenanceLocal.js)
-- Parses **C2PA / Content Credentials** — an open, *signed-metadata* standard. This needs only a parser (no ML model, no key, no remote code), so it runs locally and instantly.
-- Wired in the **service worker before the backend call**. A signed credential declaring AI → **instant "Confirmed AI"**, no backend request.
-- Mock: [`lib/provenanceLocalMock.js`](lib/provenanceLocalMock.js) (~20% return `present`, `<50ms`). **TODO(real):** drop in the in-browser `c2pa` JS SDK (needs image bytes → add a host permission for the image origin).
-
-### Stage B — BACKEND, **SynthID**
-- **There is no local SynthID detector** — SynthID image detection is Google/OpenAI's hosted, keyed service. The extension **never computes it**. The backend runs it as one pipeline signal and returns it as `provenance.synthid`.
-
-### Correctness rule (critical)
-- Provenance **present** (C2PA local *or* SynthID backend) → **high-confidence AI**.
-- Provenance **absent** → **inconclusive**, fall through to the model. **Never** render absence as "real"/green — the UI only shows the model's own verdict in that case.
-
-The deepfake verdict therefore carries two extra fields (see below): `confirmed` and `provenance`.
+The service worker is the authoritative gatekeeper — it short‑circuits gated requests before any backend call. The UI's lock icons are cosmetic hints. Upgrade is handled through the in‑extension purchase flow and the marketing site.
 
 ---
 
-## Caching
+## Supported platforms
 
-The **backend owns the real cache** (source of truth) and dedupes so the pipeline never re-runs on an already-verified post. With every request the extension sends a stable identifier:
+- **X / Twitter**
+- **Instagram**
+- **Facebook**
 
-- **`postUrl`** — canonical permalink (each adapter extracts this).
-- **`postId`** — platform-native ID parsed from the URL/DOM.
-- **`contentHash`** — hash of (image src(s) + caption) as a fallback identifier and to catch the same content reposted under a different URL.
-
-The extension also keeps a **small local mirror** ([`lib/cache.js`](lib/cache.js)) in `chrome.storage.local`, keyed by `kind:postId` (so a post's deepfake and fact-check verdicts cache independently). It's a **convenience cache only** — capped with **LRU eviction** (max 200 entries); the backend remains authoritative. It makes a badge reappear instantly for posts you already scanned, and survives service-worker restarts.
+All platform‑specific DOM logic is isolated in per‑site adapters under [`content/adapters/`](content/adapters/), each exposing the same interface (`findPosts`, `extractPostData`, `getActionAnchor`) and anchoring on stable, semantic selectors. The rest of the extension is platform‑agnostic.
 
 ---
 
-## No build step — how modules are shared
+## Installation
 
-We intentionally have **no bundler** (keeps the project approachable; nothing to install). The `lib/*.js` files are shared between the **service worker** and the **content scripts** like this:
+> Requires Google Chrome or any Chromium‑based browser with Manifest V3 support.
 
-- Each lib file uses an IIFE that attaches to `globalThis`, with **no `import`/`export`**:
-  ```js
-  (function (g) {
-    /* ... */
-    g.VerilensThing = { /* exports */ };
-  })(globalThis);
-  ```
-- The **service worker** is a *classic* worker and loads them via `importScripts("lib/...")`.
-- The **content scripts** load the same files via the manifest `content_scripts.js` array, in dependency order.
-- `globalThis` is `self` in the worker and `window` (isolated world) in content scripts, so one file works in both.
-
-This keeps `tiers.js` / `hash.js` a true single source of truth with zero tooling.
-
----
-
-## Getting started (load & test)
-
-> Requires Google Chrome (or any Chromium browser with MV3 support).
-
-1. **Clone** this repo.
+1. Clone this repository.
 2. Open `chrome://extensions`.
-3. Toggle **Developer mode** ON (top-right).
-4. Click **Load unpacked** and select the repo folder.
-5. The **Verilens** card should appear with no errors. (If there's a red **Errors** button, open it.)
-6. Go to **https://x.com**, log in, and **hard-refresh** the tab (`Cmd/Ctrl+Shift+R`).
-   > Chrome only injects content scripts on page load — if the tab was already open, you must refresh it.
-7. Scroll to any post **with an image**. You'll see a quiet **🛡 Verilens · [Check media] [🔒 Fact-check]** bar.
+3. Enable **Developer mode** (top‑right).
+4. Click **Load unpacked** and select the repository folder.
+5. Open a supported site (e.g. `https://x.com`) and refresh the tab.
 
-### Test the deepfake check (free)
-- Click **Check media** → ~0.5s loading → a panel with a colored band (🟢/🟡/🔴), an "X% AI" figure, and an explanation.
-- Click again / scroll away and back → returns instantly with a **cached** chip.
+> Chrome injects content scripts on page load — if a tab was already open, refresh it. After editing any extension file, click **↻ Reload** on the Verilens card and refresh the tab.
 
-### Test the fact-check gate (premium)
-- As a **free** user, click **🔒 Fact-check** → an upgrade card appears (the backend is **not** called).
-- Click **Enable premium (dev)** on that card → flips your tier, drops the lock, and re-runs the fact-check with claim-level verdicts + sources.
-- Both deepfake and fact-check sections can show on the same post at once.
-
-### After editing any file
-Click the **↻ reload** icon on the Verilens card, then **hard-refresh** the x.com tab.
+Out of the box, Verilens runs against a built‑in mock backend, so every feature is fully functional with **zero configuration**. To use the real models, see [Connecting the real AI models](#connecting-the-real-ai-models).
 
 ---
 
-## Configuring real AI backends (optional)
+## Usage
 
-Without any configuration, Verilens runs entirely on the **mock backend** —
-deterministic fake results, no setup required.
+- **Check media** — click on any post with an image, video, or audio to run deepfake detection. Results appear in a panel attached to the post, with a colored band, confidence, and explanation.
+- **Fact‑check** — click on a post with claims to get claim‑level verdicts and cited sources.
+- **AI text detection** — select text on the page to assess whether it was AI‑generated.
+- **Automatic filtering** — enable it from the popup (Premium). Flagged posts are blurred in place with a category label and a *Show anyway* button.
+- **Popup** — master controls, category toggles, session stats, account/plan, and a link to the live dashboard.
 
-To connect the real hosted models (VideoVeritas for video, FSD for images,
-Fast-DetectGPT for text):
+Verdict bands: 🟢 likely real · 🟡 uncertain · 🔴 likely AI. Confirmed‑AI verdicts (C2PA / SynthID) are shown as verifiable, not probabilistic.
 
-1. Copy the example config:
+---
+
+## Connecting the real AI models
+
+Without configuration, Verilens uses the mock backend. To connect the hosted models — **VideoVeritas** (video), **FSD** (image), and **Fast‑DetectGPT** (text):
+
+1. **Add your config (gitignored):**
    ```sh
    cp lib/config.local.example.js lib/config.local.js
    ```
-   `lib/config.local.js` is **gitignored** — it's the only place backend URLs
-   live. There are **no URL fields in the popup**.
-2. Run the model notebooks on Kaggle (all under [`notebooks/`](notebooks/)):
-   - [`notebooks/videoveritas-ai-video-detection.ipynb`](notebooks/videoveritas-ai-video-detection.ipynb) — serves the video deepfake model and prints an ngrok URL.
-   - [`notebooks/fsd-image-detector.ipynb`](notebooks/fsd-image-detector.ipynb) — serves the image deepfake model and prints an ngrok URL.
-   - [`notebooks/fast-gpt.ipynb`](notebooks/fast-gpt.ipynb) — serves the AI text detection model and prints an ngrok URL.
-3. Paste the printed URLs into `lib/config.local.js`:
+   `lib/config.local.js` is the only place backend URLs live — there are no URL fields in the UI.
+
+2. **Serve the models.** Run the notebooks in [`notebooks/`](notebooks/) on Kaggle; each prints a public ngrok URL:
+   - [`videoveritas-ai-video-detection.ipynb`](notebooks/videoveritas-ai-video-detection.ipynb) — video deepfake model
+   - [`fsd-image-detector.ipynb`](notebooks/fsd-image-detector.ipynb) — image deepfake model
+   - [`fast-gpt.ipynb`](notebooks/fast-gpt.ipynb) — AI text detection model
+
+3. **Paste the URLs** into `lib/config.local.js`:
    ```js
    g.VerilensConfig = {
-     videoBackendUrl: "https://xxxx.ngrok-free.app", // from videoveritas-ai-video-detection.ipynb
-     imageBackendUrl: "https://yyyy.ngrok-free.app", // from fsd-image-detector.ipynb
-     textBackendUrl: "https://zzzz.ngrok-free.app", // from fast-gpt.ipynb
+     videoBackendUrl: "https://xxxx.ngrok-free.app",
+     imageBackendUrl: "https://yyyy.ngrok-free.app",
+     textBackendUrl:  "https://zzzz.ngrok-free.app",
    };
    ```
-   Leave a value as `""` to keep using the mock for that modality.
-4. Reload the extension at `chrome://extensions` and hard-refresh the social tab.
+   Leave any value as `""` to keep using the mock for that modality.
 
-If a configured backend is unreachable (or the URL is empty), Verilens
-silently falls back to the mock — "Check media" always returns a result.
+4. **Reload** the extension and refresh the social tab.
 
-### Running multiple notebooks at the same time (ngrok)
+If a configured backend is unreachable or its URL is empty, Verilens silently falls back to the mock — a result is always returned.
 
-ngrok's free plan gives each **account** one shared static domain. If two
-notebooks authenticate with the **same** authtoken, the second tunnel fails
-with `ERR_NGROK_334` ("endpoint ... is already online").
-
-To run them simultaneously, use a **separate free ngrok account + authtoken**
-per notebook, added as Kaggle Secrets:
-- `videoveritas-ai-video-detection.ipynb` reads `NGROK_AUTH_TOKEN_VIDEO`
-  (falls back to `NGROK_AUTH_TOKEN`).
-- `fsd-image-detector.ipynb` reads `NGROK_AUTH_TOKEN_IMAGE` (falls back to
-  `NGROK_AUTH_TOKEN`).
-- `fast-gpt.ipynb` reads `NGROK_AUTH_TOKEN_TEXT` (falls back to
-  `NGROK_AUTH_TOKEN`).
-
-Just renaming/duplicating the same token under multiple secret names does
-**not** fix the conflict — each token has to come from a genuinely different
-ngrok account.
+> **Running notebooks simultaneously (ngrok):** ngrok's free plan gives one static domain per **account**. To run several tunnels at once, use a separate ngrok account/authtoken per notebook, supplied via Kaggle Secrets (`NGROK_AUTH_TOKEN_VIDEO`, `NGROK_AUTH_TOKEN_IMAGE`, `NGROK_AUTH_TOKEN_TEXT`, each falling back to `NGROK_AUTH_TOKEN`). Reusing the same token under different secret names does not resolve the conflict.
 
 ---
 
-## Marketing site & live `/docs` module
+## Marketing site & live `/docs`
 
-The [`website/`](website/) folder is a **separate static site** (plain HTML/CSS/JS,
-no build step) — it is **not** part of the extension bundle. It contains the
-marketing landing page, the demo purchase/upgrade flow, and a self-contained,
-admin-controlled **`/docs` module** that doubles as a pitch deck, technical
-whitepaper, and live system dashboard.
+The [`website/`](website/) folder is a **standalone static site** (plain HTML/CSS/JS, no build step) — it is *not* part of the extension bundle. It contains the marketing landing page, the purchase/upgrade flow, and a self‑contained **`/docs`** module that serves as pitch deck, technical whitepaper, and live system dashboard in one.
 
-### Run it locally
-
-The site is served as static files from the **repo root** so `/docs` can read
-the real `manifest.json`:
+Run it locally from the repository root (so `/docs` can read the real `manifest.json`):
 
 ```sh
 python3 -m http.server 8000      # or: ./serve.sh
@@ -367,154 +197,163 @@ python3 -m http.server 8000      # or: ./serve.sh
 | Page | URL |
 |------|-----|
 | Marketing landing | `http://localhost:8000/website/index.html` |
-| **Live `/docs`** | `http://localhost:8000/website/docs/index.html` |
-| **`/docs` admin** | `http://localhost:8000/website/docs/admin.html` |
+| Live `/docs` | `http://localhost:8000/website/docs/index.html` |
+| `/docs` admin | `http://localhost:8000/website/docs/admin.html` |
 
-The popup's "View dashboard" button and the landing-page nav both link to
-`/docs`. When deployed (e.g. GitHub Pages with `website/` as the site root),
-the route is simply `/docs`.
+**`/docs` highlights:** a YC‑style pitch deck, a technical whitepaper with architecture diagrams (Mermaid), API docs and a feature matrix, and a **live dashboard** that reads the real `manifest.json` at runtime and pings the live APIs for up/down status. It includes a grouped sidebar with scrollspy, global search, PDF/Markdown/link export, light & dark themes, and a responsive layout.
 
-### What `/docs` is
-
-A single page that combines three things, all driven from one source of truth:
-
-- **YC-style pitch deck** — Problem → Solution → … → Team → Vision.
-- **Technical whitepaper** — architecture & data-flow diagrams (Mermaid),
-  feature matrix, tech stack, API docs, data/AI layers, security, roadmap,
-  analytics, changelog.
-- **Live system dashboard** — fetches the real [`manifest.json`](manifest.json)
-  at runtime (version, MV level, supported platforms, permission counts) and
-  pings the live fact-check APIs for up/down status. Not static screenshots.
-
-Built-in: grouped sidebar TOC + scrollspy, global search (`/` to focus),
-PDF (print), Markdown, and shareable-link export, light/dark, mobile responsive.
-
-### Files
-
-| File | Purpose |
-|------|---------|
-| [`website/docs/index.html`](website/docs/index.html) | Public `/docs` page shell |
-| [`website/docs/docs.js`](website/docs/docs.js) | Renderer: access gate, TOC, search, live data, Mermaid, exports |
-| [`website/docs/docs.css`](website/docs/docs.css) | YC-style layout, responsive, print/PDF + admin styles |
-| [`website/docs/content.js`](website/docs/content.js) | **Single source of truth** — all pitch + technical content + access config |
-| [`website/docs/admin.html`](website/docs/admin.html) | Admin panel UI |
-| [`website/docs/admin.js`](website/docs/admin.js) | Section editing, team image resize, scheduling, versioning, export |
-
-### Access control & scheduling
-
-`/docs` is gated by a client-side toggle + optional date window, configured in
-[`content.js`](website/docs/content.js) under `access` (and editable in the admin
-panel):
-
-- **`enabled`** — master ON/OFF. OFF → visitors see a "Not Available" page.
-- **`useSchedule` + `start` / `end`** — when on, `/docs` is public **only**
-  inside that window (otherwise "Not Yet Available" / "Window Closed"). Default
-  window: **June 10 00:00 → June 14 23:59**.
-
-> This is **showcase-grade gating, not a security boundary** — there's no server
-> to enforce it, so the config is readable in source. It's meant for a judging /
-> investor-preview window on a static host.
-
-### Admin panel
-
-Open `admin.html` and enter the passphrase (`access.adminPassphrase` in
-`content.js`, default **`verilens-admin`**). From there you can:
-
-- Edit every section (pitch deck with drag-to-reorder, product meta, feature
-  matrix, Mermaid diagrams, and the rest as structured JSON).
-- Manage the **team**: add/remove members, set name/role/email, and upload a
-  photo that's **auto-resized to a uniform 320×320 circle** (initials avatar as
-  fallback).
-- Toggle visibility and set the publish window.
-- **Save draft** / **Publish** / **Preview** (`?preview=1` layers the draft and
-  bypasses the gate), with a rolling **version history** you can restore.
-- **Export** the config as JSON, Markdown, or a regenerated `content.js`.
-
-Admin edits are saved to the browser's `localStorage` (instant for you via
-Publish). To make changes **permanent for everyone**, use **Export → content.js**
-and commit the regenerated file.
+**Admin panel** ([`website/docs/admin.html`](website/docs/admin.html)) lets an editor manage every section, the team roster (with auto‑resized avatars), visibility scheduling, and version history, then export the canonical content back to [`website/docs/content.js`](website/docs/content.js). Access gating is showcase‑grade (client‑side), suitable for a static host preview window — not a security boundary.
 
 ---
 
-## Dev tips & debugging
+## Architecture
 
-- **Content-script logs/errors:** open DevTools on the x.com tab → Console.
-- **Service-worker logs/errors:** `chrome://extensions` → Verilens → click the **"service worker"** link.
-- **Which console am I in?** Type `chrome.storage` and press Enter:
-  - Worker console → a `StorageArea` object ✅
-  - Page console → `undefined` ❌ (the page runs in the main world; our content-script globals and `chrome.storage` aren't there).
-- **Flip your tier** (until the M4 popup switch exists) — run in the **service worker** console:
-  ```js
-  chrome.storage.local.set({ verilens_tier: "premium" }) // or "free"
-  ```
-  Then hard-refresh the x.com tab.
-- **Inspect the cache mirror:**
-  ```js
-  chrome.storage.local.get("verilens_cache").then(console.log)
-  ```
+```
+┌──────────────┐     messages      ┌────────────────────┐     fetch / local      ┌──────────────────┐
+│ content/*    │ ───────────────►  │ service-worker.js  │ ───────────────────►   │ provenance (local)│
+│ (per-page UI)│                   │ router · tier gate │                        │ + AI backends     │
+│ Shadow DOM   │ ◄───────────────  │ cache · provenance │ ◄───────────────────   │ (mock or real)    │
+└──────────────┘     verdicts      └────────────────────┘     results            └──────────────────┘
+```
 
----
+**Manifest V3 principles the codebase follows:**
 
-## Conventions for contributors
-
-- **Keep the three capabilities separate.** Don't fold deepfake, fact-check, and content-filter into one score or one code path. Different costs, different tiers, different UI.
-- **All platform DOM logic goes in an adapter.** Don't query site-specific selectors anywhere else.
-- **Anchor on stable selectors only** (`[role]`, `[data-testid]`, `<img>`, `<time>`). Never obfuscated class names.
-- **The service worker is the gatekeeper.** Enforce tier rules there; the UI's locks are cosmetic hints.
-- **Match the backend contracts exactly.** If a shape needs to change, change it in lockstep with the backend team.
-- **No durable state in service-worker globals** — use `chrome.storage.local`.
-- **All injected UI lives in a Shadow DOM**, styled by `content/styles.css`.
-- **Naming:** globals/classes/storage keys are prefixed `Verilens` / `verilens`.
+- **Service worker, not a background page** — no durable state in globals; everything persistent lives in `chrome.storage.local`.
+- **No remotely‑hosted code** — all logic ships in the extension; AI lives behind `fetch`.
+- **Least privilege** — only the permissions and host origins required by supported platforms; never `<all_urls>`.
+- **Shadow DOM for all injected UI** — site CSS and Verilens CSS stay fully isolated.
+- **Vanilla JS/CSS in the page** — no framework injected into the host site.
+- **No bundler** — `lib/*` modules attach to `globalThis` via IIFEs and are shared verbatim by the service worker (`importScripts`) and content scripts (manifest), keeping shared logic a single source of truth with zero tooling.
 
 ---
 
-## Roadmap
+## Project structure
 
-| Milestone | Scope | Status |
-|-----------|-------|--------|
-| **M1** | manifest + service worker + Twitter/X adapter + "Check media" deepfake button (image) + result panel + local cache mirror | ✅ Done |
-| **M2** | Fact-check button + result panel + tier gating + upgrade prompts | ✅ Done |
-| **M3** | Auto-filter (premium): viewport-driven `IntersectionObserver` + cheap classify path (+ local C2PA signal) + **blur-in-place + label + "Show anyway"** + popup category toggles. Classify results cached in the local mirror (`classify` kind). | ✅ Done |
-| **M4** | Popup polish: master toggle, session stats, upgrade screen, collapsed Developer tools (tier dev-switch) | ✅ Done |
-| **M5** | Instagram adapter + Facebook adapter; multi-platform dispatch by hostname | ✅ Done |
-
-Filter categories: `political`, `ai_media`, `sensitive`, `misinformation`.
-
-**Supported platforms:** X/Twitter (mature), Instagram & Facebook (best-effort selectors — their DOM is heavily obfuscated and may need retuning in the adapter files).
-
----
-
-## Known issues & remaining work
-
-Captured for follow-up. X/Twitter is solid; the newer adapters and some surfaces need more work.
-
-### Facebook adapter — not reliably working
-- The Verilens control bar often does **not** appear on Facebook posts. FB's DOM is fully obfuscated and varies by account/rollout (classic vs. newer layouts), so the current selectors in [`content/adapters/facebook.js`](content/adapters/facebook.js) need tuning against live markup.
-- Likely culprits to investigate: `findPosts()` (`[role="article"]` may not match every post container or may match too much), `getActionAnchor()` (the like/comment toolbar isn't a reliable `[role="group"]`), and caption/image extraction.
-- **TODO:** instrument with the console diagnostic (post count vs. `.verilens-host` count), then retune `findPosts` / anchor / caption / image selectors. Consider scoping to the main feed container.
-
-### Instagram & Facebook Reels / video-first surfaces — need a new button UI
-- **Reels** (IG) and **Reels/Watch** (FB) use a full-screen, vertical, overlay-heavy layout that's very different from feed posts. The current approach — injecting an inline control bar near a post's action row — **doesn't fit** there (no stable inline anchor; our bar gets hidden or mispositioned).
-- This isn't just a selector fix; it needs a **different control representation** for video-first surfaces. Options to design:
-  - A small **floating action button** (FAB) pinned to the viewport that targets the currently-visible reel.
-  - Attaching to the reel's **right-hand action rail** (like/comment/share stack) as an extra item.
-  - A single toolbar/badge anchored to the reel container rather than an inline bar.
-- **TODO:** design + implement a reel/video control mode, separate from the feed-post inline bar, and have the adapter report whether a surface is "feed" vs "reel" so `actions.js` can pick the right UI.
-
-### C2PA provenance
-- Stage A C2PA parsing is **real** (reads image bytes, detects manifest + AI marker) but does **not verify the cryptographic signature** — that needs the official in-browser `c2pa` **WASM SDK** (vendored wasm/worker assets). Marked `TODO(verify)` in [`lib/provenanceLocal.js`](lib/provenanceLocal.js).
-- Reality check: X/Twitter (and most platforms) **strip C2PA on upload**, so real-mode C2PA reads "absent" on nearly all real posts. Flip `MODE = "mock"` in `provenanceLocal.js` to demo the Confirmed-AI-via-C2PA UI.
-
-### Backend
-- All three capabilities still run against the **mock backend** (`lib/mockBackend.js`). Swapping in the real hosted pipeline = replace the `Mock.*` calls in `service-worker.js` with `fetch()` to the documented contract endpoints. SynthID is a backend signal the extension only consumes.
-
-### Smaller items
-- IG/FB image extraction excludes avatars heuristically; may occasionally miss or over-match content images.
-- Real-mode C2PA on the auto-filter path fetches image bytes per visible post — watch for scroll cost on slow connections; consider restricting real C2PA to the manual click path if needed.
+```
+.
+├── manifest.json              # MV3 configuration
+├── service-worker.js          # Message router · tier enforcement · cache · provenance · backend calls
+├── lib/
+│   ├── tiers.js               # Tier rules — single source of truth for gating
+│   ├── hash.js                # Stable contentHash for cache identity
+│   ├── cache.js               # Local LRU verdict mirror (chrome.storage.local)
+│   ├── provenanceLocal.js     # Stage A — local C2PA parsing
+│   ├── provenanceLocalMock.js # Deterministic C2PA stub for demos
+│   ├── mockBackend.js         # Deterministic mock for all capabilities
+│   ├── realBackend.js         # Real image/video model client
+│   ├── realTextBackend.js     # Real AI-text-detection client
+│   ├── config.js              # Backend config loader (+ config.local.js override)
+│   └── config.local.example.js
+├── content/
+│   ├── content.js             # Entry point — finds posts, attaches controls (per-platform dispatch)
+│   ├── actions.js             # Per-post Shadow DOM controls (Check media / Fact-check)
+│   ├── badge.js               # Result + provenance + upgrade rendering
+│   ├── filter.js              # Viewport-driven auto-filter (IntersectionObserver)
+│   ├── textSelection.js       # AI text-detection on selection
+│   ├── videoCapture.js        # Video frame capture for video deepfake
+│   ├── videoFrameExtractor.js
+│   ├── imageHover.js          # Hover affordance for media
+│   ├── purchaseUnlock.js      # In-extension upgrade flow
+│   ├── styles.css             # Shadow-DOM-scoped styles
+│   └── adapters/              # twitter.js · instagram.js · facebook.js
+├── popup/                     # popup.html / popup.js / popup.css
+├── notebooks/                 # Kaggle model servers (video / image / text)
+├── website/                   # Standalone marketing site + live /docs module
+└── assets/                    # Icons & static assets
+```
 
 ---
 
-### Design tokens
+## Integration contracts
 
-- Bands: green `#2ecc71`, amber `#f39c12`, red `#e74c3c`, grey `#8b98a5` (unverifiable).
-- Dark-mode-friendly, minimal, launch-quality. Premium-gated controls show a lock + upgrade CTA.
+The extension is built against fixed request/response shapes, so swapping the mock for a real backend changes only the transport inside the service worker.
+
+**Requests**
+
+```jsonc
+// deepfake / factcheck
+{ "postId": "…", "postUrl": "…", "contentHash": "…",
+  "imageUrls": ["…"], "captionText": "…", "hasVideo": false, "hasAudio": false }
+
+// classify (batched, cheap path used by auto-filter)
+{ "posts": [ { "postId": "…", "contentHash": "…", "captionText": "…", "imageUrls": ["…"] } ] }
+```
+
+**Deepfake result**
+
+```jsonc
+{
+  "postId": "…",
+  "cached": true,
+  "media": {
+    "image": { "aiGenerated": 0.0, "verdict": "likely_real|uncertain|likely_ai" },
+    "video": { "available": false, "reason": "premium_required" },
+    "audio": { "available": false, "reason": "premium_required" }
+  },
+  "confirmed": "c2pa | synthid | null",     // set when verifiable provenance proves AI
+  "provenance": {
+    "c2pa": "present | absent",             // resolved locally (Stage A)
+    "synthid": "present | absent | uncertain", // supplied by the backend (Stage B)
+    "source": "Adobe Firefly | null"
+  },
+  "band": "green|amber|red",
+  "explanation": "Plain-English, 2-3 sentences."
+}
+```
+
+**Fact‑check result**
+
+```jsonc
+{
+  "postId": "…",
+  "cached": false,
+  "claims": [
+    { "claim": "…", "verdict": "corroborated|contradicted|unverifiable|developing",
+      "confidence": 0.0,
+      "sources": [ { "outlet": "Reuters", "url": "…", "summary": "…" } ] }
+  ],
+  "overall": "mostly_true|mixed|mostly_false|unverifiable",
+  "explanation": "Plain-English summary."
+}
+```
+
+**Classify result** (auto‑filter)
+
+```jsonc
+{ "results": [ { "postId": "…",
+    "labels": ["political","ai_media","sensitive","misinformation"],
+    "confidence": 0.0 } ] }
+```
+
+**Gated response** (free user hits a premium feature; backend is never called)
+
+```jsonc
+{ "gated": true, "feature": "factCheck", "message": "Upgrade to Premium to use it." }
+```
+
+---
+
+## Engineering notes
+
+- **Caching.** Each scan sends a stable identity (`postId`, `postUrl`, `contentHash`). The extension keeps a small LRU mirror ([`lib/cache.js`](lib/cache.js)) keyed by `kind:postId` so badges reappear instantly and survive service‑worker restarts; the backend remains the source of truth. The worker holds the cache in memory and flushes to storage on a debounce to keep the UI responsive.
+- **Performance.** The auto‑filter is viewport‑driven (`IntersectionObserver`): a post is classified once as it scrolls into view, then cached — no repeated full‑feed scans.
+- **Resilience.** Content scripts detect an invalidated extension context (after a reload) and disconnect cleanly instead of throwing.
+- **Debugging.** Content‑script logs appear in the page DevTools console; service‑worker logs at `chrome://extensions → Verilens → service worker`.
+
+---
+
+## Contributing
+
+- Keep the three capabilities **separate** — distinct costs, tiers, and UI; never one merged score or code path.
+- Put **all** platform DOM logic in an adapter; anchor on stable, semantic selectors only (`[role]`, `[data-testid]`, `<img>`, `<time>`) — never obfuscated class names.
+- The **service worker is the gatekeeper**; UI locks are cosmetic.
+- Match the **integration contracts** exactly; change shapes in lockstep with the backend.
+- No durable state in service‑worker globals — use `chrome.storage.local`.
+- All injected UI lives in a **Shadow DOM**, styled by `content/styles.css`.
+- Prefix globals, classes, and storage keys with `Verilens` / `verilens`.
+
+---
+
+## License
+
+© 2026 Verilens. All rights reserved.
